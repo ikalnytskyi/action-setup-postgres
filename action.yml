@@ -1,0 +1,78 @@
+name: Setup PostgreSQL for Linux/macOS/Windows
+author: Ihor Kalnytskyi
+description: Setup a preinstalled PostgreSQL server.
+branding:
+  icon: database
+  color: purple
+inputs:
+  username:
+    description: The username of the user to setup.
+    default: postgres
+    required: false
+  password:
+    description: The password of the user to setup.
+    default: postgres
+    required: false
+  database:
+    description: The database name to setup and grant permissions to created user.
+    default: postgres
+    required: false
+outputs:
+  connection-uri:
+    description: The connection URI to connect to PostgreSQL.
+    value: ${{ steps.connection-uri.outputs.value }}
+runs:
+  using: composite
+  steps:
+    - name: Prerequisites
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          echo "$(pg_config --bindir)" >> $GITHUB_PATH
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          echo "$PGBIN" >> $GITHUB_PATH
+          echo "PQ_LIB_DIR=$PGROOT\lib" >> $GITHUB_ENV
+        fi
+      shell: bash
+
+
+    - name: Setup and start PostgreSQL
+      run: |
+        export PGDATA="$RUNNER_TEMP/pgdata"
+        pg_ctl init
+
+        # Forbid creating unix sockets since they are created by default in the
+        # directory we don't have permissions to.
+        echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
+        pg_ctl start
+
+        # Both PGHOST and PGUSER are used by PostgreSQL tooling such as 'psql'
+        # or 'createuser'. Since PostgreSQL data has been resetup, we cannot
+        # rely on defaults anymore.
+        #
+        # PGHOST is required for Linux and macOS since they default to unix
+        # sockets, and we have turned them off.
+        #
+        # PGUSER is required for Windows since default the tooling's default
+        # user is 'postgres', while 'pg_ctl init' creates one with the name of
+        # the current user.
+        echo "PGHOST=localhost" >> $GITHUB_ENV
+        echo "PGUSER=${USER:-$USERNAME}" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Setup PostgreSQL user and database
+      run: |
+        createuser --createdb ${{ inputs.username }}
+
+        if [ "${{ inputs.database}}" != "postgres" ]; then
+          createdb -O ${{ inputs.username }} ${{ inputs.database }}
+        fi
+
+        psql -c "ALTER USER ${{ inputs.username }} PASSWORD '${{ inputs.password }}';" ${{ inputs.database }}
+      shell: bash
+
+    - name: Expose connection URI
+      run: |
+        CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost/${{ inputs.database }}"
+        echo ::set-output name=value::$CONNECTION_URI
+      shell: bash
+      id: connection-uri
