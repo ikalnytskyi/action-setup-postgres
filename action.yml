@@ -17,6 +17,10 @@ inputs:
     description: The database name to setup and grant permissions to created user.
     default: postgres
     required: false
+  port:
+    description: The server port.
+    default: 5432
+    required: false
 outputs:
   connection-uri:
     description: The connection URI to connect to PostgreSQL.
@@ -43,6 +47,7 @@ runs:
         # Forbid creating unix sockets since they are created by default in the
         # directory we don't have permissions to.
         echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
+        echo "port = ${{ inputs.port }}" >> "$PGDATA/postgresql.conf"
         pg_ctl start
 
         # Both PGHOST and PGUSER are used by PostgreSQL tooling such as 'psql'
@@ -60,6 +65,8 @@ runs:
       shell: bash
 
     - name: Setup PostgreSQL user and database
+      env:
+        PGPORT: ${{ inputs.port }}
       run: |
         createuser --createdb ${{ inputs.username }}
 
@@ -72,7 +79,7 @@ runs:
 
     - name: Expose connection URI
       run: |
-        CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost/${{ inputs.database }}"
+        CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost:${{inputs.port}}/${{ inputs.database }}"
         echo ::set-output name=value::$CONNECTION_URI
       shell: bash
       id: connection-uri
