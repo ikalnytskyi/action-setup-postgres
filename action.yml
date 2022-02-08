@@ -62,11 +62,10 @@ runs:
         # the current user.
         echo "PGHOST=localhost" >> $GITHUB_ENV
         echo "PGUSER=${USER:-$USERNAME}" >> $GITHUB_ENV
+        echo "PGPORT=${{ inputs.port }}" >> $GITHUB_ENV
       shell: bash
 
     - name: Setup PostgreSQL user and database
-      env:
-        PGPORT: ${{ inputs.port }}
       run: |
         createuser --createdb ${{ inputs.username }}
 
