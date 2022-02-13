@@ -18,8 +18,8 @@ inputs:
     default: postgres
     required: false
   port:
-    description: The server port.
-    default: 5432
+    description: The server port to listen on.
+    default: "5432"
     required: false
 outputs:
   connection-uri:
