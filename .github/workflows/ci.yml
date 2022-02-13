@@ -58,7 +58,6 @@ jobs:
           python3 -m pip install --upgrade pip pytest psycopg
           python3 -m pytest -vv test_action.py
         env:
-          PGPORT: 34837
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
           EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order
         shell: bash
