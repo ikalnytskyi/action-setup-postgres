@@ -30,7 +30,7 @@ jobs:
           python3 -m pytest -vv test_action.py
         env:
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
-          EXPECTED_CONNECTION_URI: postgresql://postgres:postgres@localhost/postgres
+          EXPECTED_CONNECTION_URI: postgresql://postgres:postgres@localhost:5432/postgres
         shell: bash
 
   parametrized:
@@ -50,6 +50,7 @@ jobs:
           username: yoda
           password: GrandMaster
           database: jedi_order
+          port: 34837
         id: postgres
 
       - name: Run tests
@@ -57,6 +58,7 @@ jobs:
           python3 -m pip install --upgrade pip pytest psycopg
           python3 -m pytest -vv test_action.py
         env:
+          PGPORT: 34837
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
-          EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost/jedi_order
+          EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order
         shell: bash
