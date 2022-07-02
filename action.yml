@@ -42,7 +42,7 @@ runs:
     - name: Setup and start PostgreSQL
       run: |
         export PGDATA="$RUNNER_TEMP/pgdata"
-        pg_ctl init
+        pg_ctl init --options="--encoding=UTF-8 --locale=en_US.UTF-8"
 
         # Forbid creating unix sockets since they are created by default in the
         # directory we don't have permissions to.
