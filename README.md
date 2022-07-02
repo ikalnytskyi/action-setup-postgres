@@ -27,19 +27,19 @@ key features:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v2
+  - uses: ikalnytskyi/action-setup-postgres@v3
 ```
 
 #### Advanced
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v2
+  - uses: ikalnytskyi/action-setup-postgres@v3
     with:
       username: ci
       password: sw0rdfish
       database: test
-      port: "34837"
+      port: 34837
     id: postgres
 
   - run: pytest -vv tests/

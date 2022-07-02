@@ -25,6 +25,19 @@ def test_connection_uri():
     assert connection_uri == expected_connection_uri
 
 
+def test_server_encoding(connection: psycopg.Connection):
+    """Test that PostgreSQL's encoding is 'UTF-8'."""
+
+    assert connection.execute("SHOW SERVER_ENCODING").fetchone()[0] == "UTF8"
+
+
+def test_locale(connection: psycopg.Connection):
+    """Test that PostgreSQL's locale is 'en_US.UTF-8'."""
+
+    assert connection.execute("SHOW LC_COLLATE").fetchone()[0] == "en_US.UTF-8"
+    assert connection.execute("SHOW LC_CTYPE").fetchone()[0] == "en_US.UTF-8"
+
+
 def test_user_permissions(connection: psycopg.Connection):
     """Test that a user can create databases but is not a superuser."""
 
@@ -51,6 +64,21 @@ def test_user_create_insert_select(connection: psycopg.Connection):
             .execute(f"SELECT * FROM {table_name}") \
             .fetchall()
         assert records == [(1, "42")]
+
+
+def test_user_create_insert_non_ascii(connection: psycopg.Connection):
+    """Test that non-ASCII characters can be stored and fetched."""
+
+    table_name = "test_setup_postgres"
+
+    with connection, connection.transaction(force_rollback=True):
+        records = connection \
+            .execute(f"CREATE TABLE {table_name}(eggs INTEGER, rice VARCHAR)") \
+            .execute(f"INSERT INTO {table_name}(eggs, rice) VALUES (1, 'Україна')") \
+            .execute(f"INSERT INTO {table_name}(eggs, rice) VALUES (2, 'ウクライナ')") \
+            .execute(f"SELECT * FROM {table_name}") \
+            .fetchall()
+        assert records == [(1, "Україна"), (2, "ウクライナ")]
 
 
 def test_user_create_drop_database(connection: psycopg.Connection):
