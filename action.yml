@@ -21,6 +21,10 @@ inputs:
     description: The server port to listen on.
     default: "5432"
     required: false
+  rights:
+    description: Space-separated list of params passed to createuser.
+    default: "--createdb"
+    required: false
 outputs:
   connection-uri:
     description: The connection URI to connect to PostgreSQL.
@@ -51,7 +55,7 @@ runs:
         pg_ctl start
 
         # Both PGHOST and PGUSER are used by PostgreSQL tooling such as 'psql'
-        # or 'createuser'. Since PostgreSQL data has been resetup, we cannot
+        # or 'createuser'. Since PostgreSQL data has been re-setup, we cannot
         # rely on defaults anymore.
         #
         # PGHOST is required for Linux and macOS since they default to unix
@@ -63,22 +67,24 @@ runs:
         echo "PGHOST=localhost" >> $GITHUB_ENV
         echo "PGUSER=${USER:-$USERNAME}" >> $GITHUB_ENV
         echo "PGPORT=${{ inputs.port }}" >> $GITHUB_ENV
+        echo "PGDATABASE=${{ inputs.database }}" >> $GITHUB_ENV
+        echo "PGPASSWORD=${{ inputs.password }}" >> $GITHUB_ENV
       shell: bash
 
     - name: Setup PostgreSQL user and database
       run: |
-        createuser --createdb ${{ inputs.username }}
+        createuser ${{ inputs.rights }} ${{ inputs.username }}
 
-        if [ "${{ inputs.database}}" != "postgres" ]; then
+        if [ "${{ inputs.database }}" != "postgres" ]; then
           createdb -O ${{ inputs.username }} ${{ inputs.database }}
         fi
 
-        psql -c "ALTER USER ${{ inputs.username }} PASSWORD '${{ inputs.password }}';" ${{ inputs.database }}
+        psql -c "ALTER USER ${{ inputs.username }} PASSWORD '${{ inputs.password }}';"
       shell: bash
 
     - name: Expose connection URI
       run: |
         CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost:${{inputs.port}}/${{ inputs.database }}"
-        echo ::set-output name=value::$CONNECTION_URI
+        echo "value=$CONNECTION_URI" >> $GITHUB_OUTPUT
       shell: bash
       id: connection-uri
