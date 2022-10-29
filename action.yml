@@ -79,6 +79,6 @@ runs:
     - name: Expose connection URI
       run: |
         CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost:${{inputs.port}}/${{ inputs.database }}"
-        echo ::set-output name=value::$CONNECTION_URI
+        echo "value=$CONNECTION_URI" >> $GITHUB_OUTPUT
       shell: bash
       id: connection-uri
