@@ -1,4 +1,4 @@
-name: Setup PostgreSQL for Linux/macOS/Windows
+name: Setup PostgreSQL and PostGIS for Linux/macOS/Windows
 author: Yuri Astrakhan
 description: Setup PostgreSQL server and install PostGIS extension.
 branding:
@@ -38,7 +38,24 @@ runs:
   steps:
     - name: Install PostGIS (Linux)
       if: runner.os == 'Linux'
-      run: sudo apt-get install postgis
+      run: |
+        # Detect installed PostgreSQL version
+        PG_VERSION=$(apt list --installed | grep -E 'postgresql-[0-9.]+' | sed -rn 's/.*postgresql-([0-9.]+).*/\1/p')
+        [[ "$PG_VERSION" =~ ^[0-9.]+$ ]] || (echo "Failed to detect Postgres version" && exit 1)
+        echo "Detected PostgreSQL version: $PG_VERSION"
+        
+        # Install PostGIS
+        REPO_URL="https://apt.postgresql.org/pub/repos/apt/"
+        wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /usr/share/keyrings/postgresql.gpg >/dev/null
+        echo "deb [signed-by=/usr/share/keyrings/postgresql.gpg] $REPO_URL $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+        sudo apt update
+        sudo apt-get install postgresql-$PG_VERSION-postgis-3
+        
+        # sudo apt install curl ca-certificates gnupg
+        # curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg >/dev/null
+        # sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+        # sudo apt update        
+        # sudo apt-get install postgis
       shell: bash
 
     - name: Install PostGIS (Mac)
