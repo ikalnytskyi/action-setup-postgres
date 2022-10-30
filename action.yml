@@ -79,7 +79,7 @@ runs:
           createdb -O ${{ inputs.username }} ${{ inputs.database }}
         fi
 
-        psql -c "ALTER USER ${{ inputs.username }} PASSWORD '${{ inputs.password }}';"
+        psql -v ON_ERROR_STOP=1 -c "ALTER USER ${{ inputs.username }} PASSWORD '${{ inputs.password }}';"
       shell: bash
 
     - name: Expose connection URI
