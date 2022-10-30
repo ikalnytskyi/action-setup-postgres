@@ -1,6 +1,6 @@
 name: Setup PostgreSQL for Linux/macOS/Windows
-author: Ihor Kalnytskyi
-description: Setup a preinstalled PostgreSQL server.
+author: Yuri Astrakhan
+description: Setup PostgreSQL server and install PostGIS extension.
 branding:
   icon: database
   color: purple
@@ -50,9 +50,9 @@ runs:
       # Download the list of available Postgis versions, and decide which one to use
       if: runner.os == 'Windows'
       id: postgis-ver
-      shell: powershell
+      shell: pwsh
       run: |
-        echo $PSVersionTable
+        echo "PowerShell version: ${PSVersionTable.PSVersion}"
         $PG_VERSION = Split-Path $env:PGROOT -Leaf
         $postgis_page = "https://download.osgeo.org/postgis/windows/pg$PG_VERSION"
         echo "Detecting PostGIS version from $postgis_page for PostgreSQL $PG_VERSION"
@@ -76,7 +76,7 @@ runs:
 
     - name: Download Postgis (Windows)
       if: runner.os == 'Windows' && steps.postgis-ver.outputs.cache-hit != 'true'
-      shell: powershell
+      shell: pwsh
       # Download Postgis bundle if not in cache
       env:
         PGIS_BUNDLE: ${{ steps.postgis-ver.outputs.pgis_bundle }}
@@ -98,7 +98,7 @@ runs:
 
     - name: Install Postgis (Windows)
       if: runner.os == 'Windows'
-      shell: powershell
+      shell: pwsh
       run: |
         if (!(Test-Path "${{ inputs.cached-dir }}\*")) {
           Write-Error "Could not find PostGIS files in ${{ inputs.cached-dir }}"
