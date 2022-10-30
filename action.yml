@@ -25,6 +25,10 @@ inputs:
     description: Space-separated list of params passed to createuser.
     default: "--createdb"
     required: false
+  cached-dir:
+    description: Where should the temporary downloads be placed. Used to download and cache PostGIS binary.
+    default: "downloads"
+    required: false
 outputs:
   connection-uri:
     description: The connection URI to connect to PostgreSQL.
@@ -32,6 +36,80 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Install PostGIS (Linux)
+      if: runner.os == 'Linux'
+      run: sudo apt-get install postgis
+      shell: bash
+
+    - name: Install PostGIS (Mac)
+      if: runner.os == 'macOS'
+      run: brew install postgis
+      shell: bash
+
+    - name: Decide Postgis version (Windows)
+      # Download the list of available Postgis versions, and decide which one to use
+      if: runner.os == 'Windows'
+      id: postgis-ver
+      shell: powershell
+      run: |
+        echo $PSVersionTable
+        $PG_VERSION = Split-Path $env:PGROOT -Leaf
+        $postgis_page = "https://download.osgeo.org/postgis/windows/pg$PG_VERSION"
+        echo "Detecting PostGIS version from $postgis_page for PostgreSQL $PG_VERSION"
+        $pgis_bundle = (Invoke-WebRequest -Uri $postgis_page -ErrorAction Stop).Links.Where({$_.href -match "^postgis.*zip$"}).href
+        if (!$pgis_bundle) {
+          Write-Error "Could not find latest PostGIS version in $postgis_page that would match  ^postgis.*zip$  pattern"
+          exit 1
+        }
+        $pgis_bundle = [IO.Path]::ChangeExtension($pgis_bundle, [NullString]::Value)
+        $pgis_bundle_url = "$postgis_page/$pgis_bundle.zip"
+        Add-Content $env:GITHUB_OUTPUT "pgis_bundle=$pgis_bundle"
+        Add-Content $env:GITHUB_OUTPUT "pgis_bundle_url=$pgis_bundle_url"
+
+    - name: Cache Postgis Download (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/cache@v3
+      id: cache-downloads
+      with:
+        path: ${{ inputs.cached-dir }}
+        key: ${{ runner.os }}-${{ steps.postgis-ver.outputs.pgis_bundle_url }}
+
+    - name: Download Postgis (Windows)
+      if: runner.os == 'Windows' && steps.postgis-ver.outputs.cache-hit != 'true'
+      shell: powershell
+      # Download Postgis bundle if not in cache
+      env:
+        PGIS_BUNDLE: ${{ steps.postgis-ver.outputs.pgis_bundle }}
+        PGIS_BUNDLE_URL: ${{ steps.postgis-ver.outputs.pgis_bundle_url }}
+      run: |
+        echo "Downloading $env:PGIS_BUNDLE from $env:PGIS_BUNDLE_URL"
+        $postgis_zip = "postgis.zip"
+        Invoke-WebRequest $env:PGIS_BUNDLE_URL -OutFile $postgis_zip -ErrorAction Stop
+
+        echo "Extracting ${{ inputs.cached-dir }}\$env:PGIS_BUNDLE\*"
+        Remove-Item ${{ inputs.cached-dir }} -Recurse -Force -ErrorAction Ignore
+        echo "Expanded $((Expand-Archive $postgis_zip -DestinationPath ${{ inputs.cached-dir }} -PassThru).count) files from $postgis_zip"
+        echo "Moved $((Move-Item -Path "${{ inputs.cached-dir }}\$env:PGIS_BUNDLE\*" -Destination ${{ inputs.cached-dir }} -Force -PassThru).count) files to ${{ inputs.cached-dir }}"
+        Remove-Item $postgis_zip
+        if (!(Test-Path "${{ inputs.cached-dir }}\*")) {
+          Write-Error "Could not find PostGIS files in ${{ inputs.cached-dir }}"
+          exit 1
+        }
+
+    - name: Install Postgis (Windows)
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        if (!(Test-Path "${{ inputs.cached-dir }}\*")) {
+          Write-Error "Could not find PostGIS files in ${{ inputs.cached-dir }}"
+          exit 1
+        }
+        echo "Copied $((Copy-Item -Path "${{ inputs.cached-dir }}\*" -Destination $env:PGROOT -Force -Recurse -PassThru).count) PostGIS files to $env:PGROOT"
+        echo "Starting PostgreSQL and adding postgis extension"
+        $env:Path = "$env:PGBIN;" + $env:Path
+        & pg_ctl restart -D "$env:PGDATA"
+        & pg_isready
+
     - name: Prerequisites
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
@@ -41,7 +119,6 @@ runs:
           echo "PQ_LIB_DIR=$PGROOT\lib" >> $GITHUB_ENV
         fi
       shell: bash
-
 
     - name: Setup and start PostgreSQL
       run: |
