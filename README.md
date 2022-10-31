@@ -41,11 +41,11 @@ steps:
       password: sw0rdfish
       database: test
       port: 34837
-    id: postgres
+    id: pg
 
   - run: pytest -vv tests/
     env:
-      DATABASE_URI: ${{ steps.postgres.outputs.connection-uri }}
+      DATABASE_URI: ${{ steps.pg.outputs.connection-uri }}
 ```
 
 ## License
