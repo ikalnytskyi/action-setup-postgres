@@ -28,14 +28,14 @@ This action sets up a PostgreSQL server with PostGIS extension.  The code is bas
 
 ```yaml
 steps:
-  - uses: nyurik/action-setup-postgis@main
+  - uses: nyurik/action-setup-postgis@v1
 ```
 
 #### Advanced
 
 ```yaml
 steps:
-  - uses: nyurik/action-setup-postgis@main
+  - uses: nyurik/action-setup-postgis@v1
     with:
       username: ci
       password: sw0rdfish
