@@ -1,5 +1,6 @@
-import typing as t
 import os
+import typing as t
+import urllib.parse
 
 import psycopg
 import pytest
@@ -91,3 +92,45 @@ def test_user_create_drop_database(connection: psycopg.Connection):
     database_name = "foobar42"
     connection.execute(f"CREATE DATABASE {database_name}")
     connection.execute(f"DROP DATABASE {database_name}")
+
+
+def test_auth_wrong_username(connection_factory: t.Callable[[str], psycopg.Connection]):
+    """Test that wrong username is rejected!"""
+
+    connection_uri = os.getenv("CONNECTION_URI")
+    connection_parts = urllib.parse.urlparse(connection_uri)
+
+    # Despite of exposting username/password of network location, poor Python
+    # doesn't allow their modification. Thus we have to have these dances in
+    # order to change the password in the connection URI.
+    userinfo, _, hostinfo = connection_parts.netloc.rpartition("@")
+    _ , _, password = userinfo.rpartition(":")
+    connection_parts = connection_parts._replace(netloc=f"bruteforce:{password}@{hostinfo}")
+    connection_uri = urllib.parse.urlunparse(connection_parts)
+
+    with pytest.raises(psycopg.OperationalError) as excinfo:
+        test_user_create_insert_select(connection_factory(connection_uri))
+    assert str(excinfo.value) == (
+        f'connection failed: FATAL:  password authentication failed for user "bruteforce"'
+    )
+
+
+def test_auth_wrong_password(connection_factory: t.Callable[[str], psycopg.Connection]):
+    """Test that wrong password is rejected!"""
+
+    connection_uri = os.getenv("CONNECTION_URI")
+    connection_parts = urllib.parse.urlparse(connection_uri)
+
+    # Despite of exposting username/password of network location, poor Python
+    # doesn't allow their modification. Thus we have to have these dances in
+    # order to change the password in the connection URI.
+    userinfo, _, hostinfo = connection_parts.netloc.rpartition("@")
+    username, _, _ = userinfo.rpartition(":")
+    connection_parts = connection_parts._replace(netloc=f"{username}:bruteforce@{hostinfo}")
+    connection_uri = urllib.parse.urlunparse(connection_parts)
+
+    with pytest.raises(psycopg.OperationalError) as excinfo:
+        test_user_create_insert_select(connection_factory(connection_uri))
+    assert str(excinfo.value) == (
+        f'connection failed: FATAL:  password authentication failed for user "{username}"'
+    )

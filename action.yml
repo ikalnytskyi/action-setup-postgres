@@ -42,26 +42,54 @@ runs:
     - name: Setup and start PostgreSQL
       run: |
         export PGDATA="$RUNNER_TEMP/pgdata"
-        pg_ctl init --options="--encoding=UTF-8 --locale=en_US.UTF-8"
+        export PWFILE="$RUNNER_TEMP/pwfile"
 
-        # Forbid creating unix sockets since they are created by default in the
-        # directory we don't have permissions to.
-        echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
-        echo "port = ${{ inputs.port }}" >> "$PGDATA/postgresql.conf"
+        # Save user password on disk so we can create a new PostgreSQL database
+        # cluster. Password must be set because we're turning 'trust'
+        # authentication off, and there's no other option since this script is
+        # not executed interactively.
+        echo '${{ inputs.password }}' > $PWFILE
+
+        # There are couple of reasons why we need to create a new PostgreSQL
+        # database cluster:
+        #
+        # * TODO
+        #  --auth="scram-sha-256" \
+        initdb \
+          --username="${{ inputs.username }}" \
+          --pwfile="$PWFILE" \
+          --auth-local="trust" \
+          --auth-host="scram-sha-256" \
+          --encoding="UTF-8" \
+          --locale="en_US.UTF-8" \
+          --no-instructions
+
+        cat <<EOF > "$PGDATA/postgresql.conf"
+        port = ${{ inputs.port }}
+        EOF
+
+        # Client authentication is controlled by a host-based authentication
+        # configuration file. By default local connections are trusted and do
+        # not require password (in fact, passwords are ignored). It's undesired
+        # behaviour in our case since in case of CI we want to make sure that
+        # the password is configured and passed properly by the application
+        # under test.
+        # cat <<EOF > "$PGDATA/pg_hba.conf"
+        # host all all all scram-sha-256
+        # EOF
         pg_ctl start
 
         # Both PGHOST and PGUSER are used by PostgreSQL tooling such as 'psql'
-        # or 'createuser'. Since PostgreSQL data has been resetup, we cannot
+        # or 'createuser'. Since PostgreSQL data has been recreated, we cannot
         # rely on defaults anymore.
         #
         # PGHOST is required for Linux and macOS since they default to unix
         # sockets, and we have turned them off.
         #
-        # PGUSER is required for Windows since default the tooling's default
-        # user is 'postgres', while 'pg_ctl init' creates one with the name of
-        # the current user.
-        echo "PGHOST=localhost" >> $GITHUB_ENV
-        echo "PGUSER=${USER:-$USERNAME}" >> $GITHUB_ENV
+        # PGUSER is required for Windows since default tooling user is
+        # 'postgres', while 'pg_ctl init' creates one with the name of the
+        # current user.
+        #echo "PGHOST=localhost" >> $GITHUB_ENV
         echo "PGPORT=${{ inputs.port }}" >> $GITHUB_ENV
       shell: bash
 
