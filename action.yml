@@ -38,42 +38,56 @@ runs:
         fi
       shell: bash
 
-
     - name: Setup and start PostgreSQL
       run: |
         export PGDATA="$RUNNER_TEMP/pgdata"
-        pg_ctl init --options="--encoding=UTF-8 --locale=en_US.UTF-8"
 
-        # Forbid creating unix sockets since they are created by default in the
-        # directory we don't have permissions to.
+        # There are couple of reasons why we need to create a new PostgreSQL
+        # database cluster. First and foremost, we have to create a superuser
+        # with provided credentials. Second, we want the PostgreSQL client
+        # applications [1] to be available for execution without
+        # run-from-another-user dances. Third, we want to make sure that
+        # settings are the same between operating systems and aren't changed by
+        # package vendors.
+        #
+        # [1] https://www.postgresql.org/docs/15/reference-client.html
+        initdb \
+          --username="${{ inputs.username }}" \
+          --encoding="UTF-8" \
+          --locale="en_US.UTF-8" \
+          --no-instructions
+
+        # Do not create unix sockets since they are created by default in the
+        # directory we have no permissions to (owned by system postgres user).
         echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
         echo "port = ${{ inputs.port }}" >> "$PGDATA/postgresql.conf"
         pg_ctl start
 
-        # Both PGHOST and PGUSER are used by PostgreSQL tooling such as 'psql'
-        # or 'createuser'. Since PostgreSQL data has been resetup, we cannot
-        # rely on defaults anymore.
+        # Set environment variables for PostgreSQL client applications [1] such
+        # as 'psql' or 'createuser'.
         #
-        # PGHOST is required for Linux and macOS since they default to unix
-        # sockets, and we have turned them off.
+        # PGHOST is required for Linux/macOS because we turned off unix sockets
+        # and they use them by default.
         #
-        # PGUSER is required for Windows since default the tooling's default
-        # user is 'postgres', while 'pg_ctl init' creates one with the name of
-        # the current user.
+        # PGPORT, PGUSER and PGDATABASE are required because they could be
+        # parametrized via action input parameters.
+        #
+        # [1] https://www.postgresql.org/docs/15/reference-client.html
         echo "PGHOST=localhost" >> $GITHUB_ENV
-        echo "PGUSER=${USER:-$USERNAME}" >> $GITHUB_ENV
         echo "PGPORT=${{ inputs.port }}" >> $GITHUB_ENV
+        echo "PGUSER=${{ inputs.username }}" >> $GITHUB_ENV
+        echo "PGDATABASE=${{ inputs.database }}" >> $GITHUB_ENV
       shell: bash
 
-    - name: Setup PostgreSQL user and database
+    - name: Setup PostgreSQL database
       run: |
-        createuser --createdb ${{ inputs.username }}
-
-        if [ "${{ inputs.database}}" != "postgres" ]; then
-          createdb -O ${{ inputs.username }} ${{ inputs.database }}
+        # The 'postgres' database is a pre-created database meant for use by
+        # users, utilities and third party applications. There's no way to
+        # parametrize the name, so all we can do is to avoid creating a
+        # database if provided name is 'postgres'.
+        if [ "${{ inputs.database }}" != "postgres" ]; then
+          createdb -O "${{ inputs.username }}" "${{ inputs.database }}"
         fi
-
-        psql -c "ALTER USER ${{ inputs.username }} PASSWORD '${{ inputs.password }}';" ${{ inputs.database }}
       shell: bash
 
     - name: Expose connection URI
