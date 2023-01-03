@@ -3,16 +3,18 @@
 This action sets up a PostgreSQL server for the rest of the job. Here are some
 key features:
 
-* Runs on Linux, macOS and Windows runners.
-* Adds PostgreSQL [binaries][1] (e.g. `psql`) to `PATH`.
-* Uses PostgreSQL installed in [GitHub Actions Virtual Environments][2].
-* [Easy to check][3] that IT DOES NOT contain malicious code.
+* Runs on Linux, macOS and Windows action runners.
+* Adds PostgreSQL [client applications][1] to `PATH`.
+* Uses PostgreSQL binaries baked into [GitHub Actions Runner Images][2].
+* Easy [to prove][3] that it DOES NOT contain malicious code.
 
 [1]: https://www.postgresql.org/docs/current/reference-client.html
-[2]: https://github.com/actions/virtual-environments
+[2]: https://github.com/actions/runner-images
 [3]: action.yml
 
 ## Usage
+
+#### Connection parameters
 
 | Key      | Value                                               |
 |----------|-----------------------------------------------------|
@@ -22,6 +24,13 @@ key features:
 | Username | `postgres`                                          |
 | Password | `postgres`                                          |
 | Database | `postgres`                                          |
+
+#### User permissions
+
+| Key         | Value |
+|-------------|-------|
+| usesuper    | true  |
+| usecreatedb | true  |
 
 #### Basic
 
@@ -46,6 +55,13 @@ steps:
     env:
       DATABASE_URI: ${{ steps.postgres.outputs.connection-uri }}
 ```
+
+## Rationale
+
+At the time of developing there were no GitHub Actions on the marketplace to
+setup a PostgreSQL server on Linux, Windows and macOS action runners. Most
+solutions suggest using Docker which is not available on macOS and Windows
+runners.
 
 ## License
 
