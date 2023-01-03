@@ -146,7 +146,7 @@ def test_user_create_drop_user(
         connection.execute(f"DROP USER {username}")
 
 
-def test_client_applications(connection_uri, connection_factory):
+def test_client_applications(connection_factory: ConnectionFactory, connection_uri: str):
     """Test that PostgreSQL client applications can be used."""
 
     username = "us3rname"
@@ -167,3 +167,26 @@ def test_client_applications(connection_uri, connection_factory):
     finally:
         subprocess.check_call(["dropdb", database])
         subprocess.check_call(["dropuser", username])
+
+
+def test_auth_wrong_username(connection_factory: ConnectionFactory, connection_uri: str):
+    """Test that wrong username is rejected!"""
+
+    connection_furl = furl.furl(connection_uri, username="wrong")
+
+    with pytest.raises(psycopg.OperationalError) as excinfo:
+        connection_factory(connection_furl.url)
+
+    assert 'password authentication failed for user "wrong"' in str(excinfo.value)
+
+
+def test_auth_wrong_password(connection_factory: ConnectionFactory, connection_uri: str):
+    """Test that wrong password is rejected!"""
+
+    connection_furl = furl.furl(connection_uri, password="wrong")
+    username = connection_furl.username
+
+    with pytest.raises(psycopg.OperationalError) as excinfo:
+        connection_factory(connection_furl.url)
+
+    assert f'password authentication failed for user "{username}"' in str(excinfo.value)
