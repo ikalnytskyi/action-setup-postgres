@@ -24,6 +24,7 @@ key features:
 | Username | `postgres`                                          |
 | Password | `postgres`                                          |
 | Database | `postgres`                                          |
+| Service  | `postgres`                                          |
 
 #### User permissions
 
@@ -53,7 +54,57 @@ steps:
 
   - run: pytest -vv tests/
     env:
-      DATABASE_URI: ${{ steps.postgres.outputs.connection-uri }}
+      CONNECTION_STR: ${{ steps.postgres.outputs.connection-uri }}
+
+  - run: pytest -vv tests/
+    env:
+      CONNECTION_STR: service=${{ steps.postgres.outputs.service-name }}
+```
+
+## Recipes
+
+#### Create a new user w/ database via CLI
+
+```yaml
+steps:
+  - uses: ikalnytskyi/action-setup-postgres@v3
+
+  - run: |
+      createuser myuser
+      createdb --owner myuser mydatabase
+      psql -c "ALTER USER myuser WITH PASSWORD 'mypassword'"
+
+    env:
+      # This activates connection parameters for the superuser created by
+      # the action in the step above. It's mandatory to set this before using
+      # createuser/psql/etc tools.
+      #
+      # The service name is the same as the username (i.e. 'postgres') but
+      # it's recommended to use action's output to get the name in order to
+      # be forward compatible.
+      PGSERVICE: ${{ steps.postgres.outputs.service-name }}
+    shell: bash
+```
+
+#### Create a new user w/ database via psycopg
+
+```yaml
+steps:
+  - uses: ikalnytskyi/action-setup-postgres@v3
+```
+
+```python
+import psycopg
+
+# 'postgres' is the username here, but it's recommended to use the
+# action's 'service-name' output parameter here.
+connection = psycopg.connect("service=postgres")
+
+# CREATE/DROP USER statements don't work within transactions, and with
+# autocommit disabled transactions are created by psycopg automatically.
+connection.autocommit = True
+connection.execute(f"CREATE USER myuser WITH PASSWORD 'mypassword'")
+connection.execute(f"CREATE DATABASE mydatabase WITH OWNER 'myuser'")
 ```
 
 ## Rationale

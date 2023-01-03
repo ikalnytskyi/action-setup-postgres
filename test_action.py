@@ -22,6 +22,16 @@ def connection_uri() -> str:
 
 
 @pytest.fixture(scope="function")
+def service_name() -> str:
+    """Read and return connection URI from environment."""
+
+    service_name = os.getenv("SERVICE_NAME")
+    if service_name is None:
+        pytest.fail("SERVICE_NAME: environment variable is not set")
+    return service_name
+
+
+@pytest.fixture(scope="function")
 def connection_factory() -> ConnectionFactory:
     """Return 'psycopg.Connection' factory."""
 
@@ -30,19 +40,32 @@ def connection_factory() -> ConnectionFactory:
     return factory
 
 
-@pytest.fixture(scope="function")
-def connection(connection_uri: str, connection_factory: ConnectionFactory) -> psycopg.Connection:
+@pytest.fixture(scope="function", params=["uri", "kv-string"])
+def connection(
+    request: pytest.FixtureRequest,
+    connection_factory: ConnectionFactory,
+    connection_uri: str,
+    service_name: str,
+) -> psycopg.Connection:
     """Return 'psycopg.Connection' for connection URI set in environment."""
 
-    return connection_factory(connection_uri)
+    if request.param == "uri":
+        return connection_factory(connection_uri)
+    elif request.param == "kv-string":
+        return connection_factory(f"service={service_name}")
+    raise RuntimeError("f{request.param}: unknown value")
 
 
-def test_connection_uri():
+def test_connection_uri(connection_uri):
     """Test that CONNECTION_URI matches EXPECTED_CONNECTION_URI."""
 
-    connection_uri = os.getenv("CONNECTION_URI")
-    expected_connection_uri = os.getenv("EXPECTED_CONNECTION_URI")
-    assert connection_uri == expected_connection_uri
+    assert connection_uri == os.getenv("EXPECTED_CONNECTION_URI")
+
+
+def test_service_name(service_name):
+    """Test that SERVICE_NAME matches EXPECTED_SERVICE_NAME."""
+
+    assert service_name == os.getenv("EXPECTED_SERVICE_NAME")
 
 
 def test_server_encoding(connection: psycopg.Connection):
@@ -146,8 +169,17 @@ def test_user_create_drop_user(
         connection.execute(f"DROP USER {username}")
 
 
-def test_client_applications(connection_factory: ConnectionFactory, connection_uri: str):
+def test_client_applications(
+    connection_factory: ConnectionFactory,
+    service_name: str,
+    connection_uri: str,
+    monkeypatch: pytest.MonkeyPatch,
+):
     """Test that PostgreSQL client applications can be used."""
+
+    # Request connection parameters from the connection service file prepared
+    # by our action.
+    monkeypatch.setenv("PGSERVICE", service_name)
 
     username = "us3rname"
     password = "passw0rd"
