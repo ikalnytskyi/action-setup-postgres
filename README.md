@@ -37,14 +37,14 @@ key features:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v3
+  - uses: ikalnytskyi/action-setup-postgres@v4
 ```
 
 #### Advanced
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v3
+  - uses: ikalnytskyi/action-setup-postgres@v4
     with:
       username: ci
       password: sw0rdfish
@@ -67,7 +67,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v3
+  - uses: ikalnytskyi/action-setup-postgres@v4
 
   - run: |
       createuser myuser
@@ -90,7 +90,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v3
+  - uses: ikalnytskyi/action-setup-postgres@v4
 ```
 
 ```python
