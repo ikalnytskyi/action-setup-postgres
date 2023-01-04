@@ -30,7 +30,9 @@ jobs:
           python3 -m pytest -vv test_action.py
         env:
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
+          SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
           EXPECTED_CONNECTION_URI: postgresql://postgres:postgres@localhost:5432/postgres
+          EXPECTED_SERVICE_NAME: postgres
         shell: bash
 
   parametrized:
@@ -59,5 +61,7 @@ jobs:
           python3 -m pytest -vv test_action.py
         env:
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
+          SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
           EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order
+          EXPECTED_SERVICE_NAME: yoda
         shell: bash

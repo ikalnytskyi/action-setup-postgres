@@ -24,7 +24,10 @@ inputs:
 outputs:
   connection-uri:
     description: The connection URI to connect to PostgreSQL.
-    value: ${{ steps.connection-uri.outputs.value }}
+    value: ${{ steps.set-outputs.outputs.connection-uri }}
+  service-name:
+    description: The service name with connection parameters.
+    value: ${{ steps.set-outputs.outputs.service-name }}
 runs:
   using: composite
   steps:
@@ -71,21 +74,27 @@ runs:
         echo "port = ${{ inputs.port }}" >> "$PGDATA/postgresql.conf"
         pg_ctl start
 
-        # Set environment variables for PostgreSQL client applications [1] such
-        # as 'psql' or 'createuser'.
+        # Save required connection parameters for created superuser to the
+        # connection service file [1]. This allows using these connection
+        # parameters by setting 'PGSERVICE' environment variable or by
+        # requesting them via connection string.
         #
-        # PGHOST is required for Linux/macOS because we turned off unix sockets
-        # and they use them by default.
+        # HOST is required for Linux/macOS because these OS-es default to unix
+        # sockets but we turned them off.
         #
-        # PGPORT, PGUSER, PGPASSWORD and PGDATABASE are required because they
-        # could be parametrized via action input parameters.
+        # PORT, USER, PASSWORD and DBNAME are required because they could be
+        # parametrized via action input parameters.
         #
-        # [1] https://www.postgresql.org/docs/15/reference-client.html
-        echo "PGHOST=localhost" >> $GITHUB_ENV
-        echo "PGPORT=${{ inputs.port }}" >> $GITHUB_ENV
-        echo "PGUSER=${{ inputs.username }}" >> $GITHUB_ENV
-        echo "PGPASSWORD=${{ inputs.password }}" >> $GITHUB_ENV
-        echo "PGDATABASE=${{ inputs.database }}" >> $GITHUB_ENV
+        # [1] https://www.postgresql.org/docs/15/libpq-pgservice.html
+        cat <<EOF > "$PGDATA/pg_service.conf"
+        [${{ inputs.username }}]
+        host=localhost
+        port=${{ inputs.port }}
+        user=${{ inputs.username }}
+        password=${{ inputs.password }}
+        dbname=${{ inputs.database }}
+        EOF
+        echo "PGSERVICEFILE=$PGDATA/pg_service.conf" >> $GITHUB_ENV
       shell: bash
 
     - name: Setup PostgreSQL database
@@ -97,11 +106,15 @@ runs:
         if [ "${{ inputs.database }}" != "postgres" ]; then
           createdb -O "${{ inputs.username }}" "${{ inputs.database }}"
         fi
+      env:
+        PGSERVICE: ${{ inputs.username }}
       shell: bash
 
-    - name: Expose connection URI
+    - name: Set action outputs
       run: |
-        CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost:${{inputs.port}}/${{ inputs.database }}"
-        echo "value=$CONNECTION_URI" >> $GITHUB_OUTPUT
+        CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost:${{ inputs.port }}/${{ inputs.database }}"
+
+        echo "connection-uri=$CONNECTION_URI" >> $GITHUB_OUTPUT
+        echo "service-name=${{ inputs.username }}" >> $GITHUB_OUTPUT
       shell: bash
-      id: connection-uri
+      id: set-outputs
