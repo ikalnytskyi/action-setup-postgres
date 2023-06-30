@@ -21,6 +21,10 @@ inputs:
     description: The server port to listen on.
     default: "5432"
     required: false
+  postgres-version:
+    description: The PostgreSQL version (major) to install. E.g. "13" or "14".
+    default: "15"
+    required: false
 outputs:
   connection-uri:
     description: The connection URI to connect to PostgreSQL.
@@ -31,13 +35,45 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Prerequisites
+    - name: Install PostgreSQL
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
-          echo "$(pg_config --bindir)" >> $GITHUB_PATH
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list
+          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+          sudo apt-get update
+          sudo apt-get -y install postgresql-${{ inputs.postgres-version }}
+
+          # Add PostgreSQL binaries to PATH, so they become globally available.
+          /usr/lib/postgresql/${{ inputs.postgres-version }}/bin/pg_config --bindir >> $GITHUB_PATH
+
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          brew install postgresql@${{ inputs.postgres-version }}
+
+          # Link PostgreSQL binaries to /usr/local/bin so they become globally
+          # available. The overwrite option is required because they might be a
+          # preinstalled linked bottle.
+          brew link --overwrite postgresql@${{ inputs.postgres-version }}
+
         elif [ "$RUNNER_OS" == "Windows" ]; then
-          echo "$PGBIN" >> $GITHUB_PATH
-          echo "PQ_LIB_DIR=$PGROOT\lib" >> $GITHUB_ENV
+          # FIXME: Aargh! For reasons unknown the '--servicename' option is
+          # ignored when installing a PostgreSQL version that is already
+          # preinstalled on GitHub runners. In order to bypass the issue I'm
+          # using default naming convention (i.e. with arch in the name).
+          choco install postgresql${{ inputs.postgres-version }} \
+            --ia "--servicename postgresql-${{ runner.arch }}-${{ inputs.postgres-version }}"
+
+          # Stop PostgreSQL that has been auto started after installation. This
+          # action prepares new configuration and brings its own instance, and
+          # we need a network port to be free.
+          net stop postgresql-${{ runner.arch }}-${{ inputs.postgres-version }}
+
+          # Add PostgreSQL binaries to PATH, so they become globally available
+          # and set path to LIBPQ to link against. On Windows it comes together
+          # with PostgreSQL distribution.
+          export PGROOT="$PROGRAMFILES/PostgreSQL/${{ inputs.postgres-version }}"
+          "$PGROOT"/bin/pg_config.exe --bindir >> $GITHUB_PATH
+          echo "PQ_LIB_DIR=$("$PGROOT"/bin/pg_config.exe --libdir)" >> $GITHUB_ENV
         fi
       shell: bash
 
@@ -65,8 +101,7 @@ runs:
           --pwfile="$PWFILE" \
           --auth="scram-sha-256" \
           --encoding="UTF-8" \
-          --locale="en_US.UTF-8" \
-          --no-instructions
+          --locale="en_US.UTF-8"
 
         # Do not create unix sockets since they are created by default in the
         # directory we have no permissions to (owned by system postgres user).

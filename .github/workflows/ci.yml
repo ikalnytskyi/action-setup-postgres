@@ -18,7 +18,7 @@ jobs:
           - windows-latest
           - macos-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Run setup-postgres
         uses: ./
@@ -33,6 +33,7 @@ jobs:
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
           EXPECTED_CONNECTION_URI: postgresql://postgres:postgres@localhost:5432/postgres
           EXPECTED_SERVICE_NAME: postgres
+          EXPECTED_SERVER_VERSION: "15"
         shell: bash
 
   parametrized:
@@ -43,8 +44,11 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
+        postgres-version:
+          - "13"
+          - "14"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Run setup-postgres
         uses: ./
@@ -53,6 +57,7 @@ jobs:
           password: GrandMaster
           database: jedi_order
           port: 34837
+          postgres-version: ${{ matrix.postgres-version }}
         id: postgres
 
       - name: Run tests
@@ -64,4 +69,5 @@ jobs:
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
           EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order
           EXPECTED_SERVICE_NAME: yoda
+          EXPECTED_SERVER_VERSION: ${{ matrix.postgres-version }}
         shell: bash

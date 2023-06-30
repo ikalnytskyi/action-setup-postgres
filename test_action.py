@@ -84,6 +84,13 @@ def test_locale(connection: psycopg.Connection):
     assert locale.normalize(lc_ctype) == "en_US.UTF-8"
 
 
+def test_server_version(connection: psycopg.Connection):
+    """Test that PostgreSQL's version is expected."""
+
+    server_version = connection.execute("SHOW SERVER_VERSION").fetchone()[0]
+    assert server_version.split(".")[0] == os.getenv("EXPECTED_SERVER_VERSION")
+
+
 def test_user_permissions(connection: psycopg.Connection):
     """Test that a user has super/createdb permissions."""
 

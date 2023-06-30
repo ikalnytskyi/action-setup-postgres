@@ -5,12 +5,13 @@ key features:
 
 * Runs on Linux, macOS and Windows action runners.
 * Adds PostgreSQL [client applications][1] to `PATH`.
-* Uses PostgreSQL binaries baked into [GitHub Actions Runner Images][2].
-* Easy [to prove][3] that it DOES NOT contain malicious code.
+* Supports PostgreSQL version parametrization.
+* Easy [to prove][2] that it DOES NOT contain malicious code.
+
+By default PostgreSQL 15 is used.
 
 [1]: https://www.postgresql.org/docs/current/reference-client.html
-[2]: https://github.com/actions/runner-images
-[3]: action.yml
+[2]: action.yml
 
 ## Usage
 
@@ -37,19 +38,20 @@ key features:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v4
+  - uses: ikalnytskyi/action-setup-postgres@v5
 ```
 
 #### Advanced
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v4
+  - uses: ikalnytskyi/action-setup-postgres@v5
     with:
       username: ci
       password: sw0rdfish
       database: test
       port: 34837
+      postgres-version: "13"
     id: postgres
 
   - run: pytest -vv tests/
@@ -67,7 +69,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v4
+  - uses: ikalnytskyi/action-setup-postgres@v5
 
   - run: |
       createuser myuser
@@ -90,7 +92,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v4
+  - uses: ikalnytskyi/action-setup-postgres@v5
 ```
 
 ```python
