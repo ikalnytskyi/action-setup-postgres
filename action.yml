@@ -95,6 +95,8 @@ runs:
         dbname=${{ inputs.database }}
         EOF
         echo "PGSERVICEFILE=$PGDATA/pg_service.conf" >> $GITHUB_ENV
+        echo "PGUSER=${{ inputs.username }}" >> $GITHUB_ENV
+        echo "PGPASSWORD=${{ inputs.password }}" >> $GITHUB_ENV
       shell: bash
 
     - name: Setup PostgreSQL database
