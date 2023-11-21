@@ -58,6 +58,12 @@ runs:
         # sudo apt-get install postgis
       shell: bash
 
+      # A workaround for postgis installation bug on macOS. Might not be needed in the future
+    - name: Brew workaround (Mac)
+      if: runner.os == 'macOS'
+      run: brew link --overwrite python@3.11
+      shell: bash
+
     - name: Install PostGIS (Mac)
       if: runner.os == 'macOS'
       run: brew install postgis
