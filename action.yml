@@ -38,6 +38,14 @@ runs:
         elif [ "$RUNNER_OS" == "Windows" ]; then
           echo "$PGBIN" >> $GITHUB_PATH
           echo "PQ_LIB_DIR=$PGROOT\lib" >> $GITHUB_ENV
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          case "$(sw_vers -productVersion)" in
+            13.*)
+              # Unfortunately, the macOS 13 runner image doesn't come w/
+              # pre-installed PostgreSQL server.
+              brew install postgresql@14
+              ;;
+          esac
         fi
       shell: bash
 
