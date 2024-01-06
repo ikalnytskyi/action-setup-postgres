@@ -38,6 +38,13 @@ runs:
         elif [ "$RUNNER_OS" == "Windows" ]; then
           echo "$PGBIN" >> $GITHUB_PATH
           echo "PQ_LIB_DIR=$PGROOT\lib" >> $GITHUB_ENV
+
+          # The Windows runner has some PostgreSQL environment variables set
+          # that may confuse users since they may be irrelevant to the
+          # PostgreSQL server we're using.
+          for name in "PGROOT" "PGDATA" "PGBIN" "PGUSER" "PGPASSWORD"; do
+            echo "$name=" >> $GITHUB_ENV
+          done
         elif [ "$RUNNER_OS" == "macOS" ]; then
           case "$(sw_vers -productVersion)" in
             13.*)

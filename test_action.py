@@ -1,5 +1,6 @@
 import locale
 import os
+import pathlib
 import subprocess
 import typing as t
 
@@ -82,6 +83,30 @@ def test_locale(connection: psycopg.Connection):
 
     assert locale.normalize(lc_collate) == "en_US.UTF-8"
     assert locale.normalize(lc_ctype) == "en_US.UTF-8"
+
+
+def test_environment_variables():
+    """Test that only expected 'PG*' variables are set."""
+
+    pg_environ = {k: v for k, v in os.environ.items() if k.startswith("PG")}
+
+    # In case of Windows, there might be a mix of forward and backward slashes
+    # as separators. So let's compare paths semantically instead.
+    pg_servicefile = pathlib.Path(pg_environ.pop("PGSERVICEFILE", ""))
+    pg_servicefile_exp = pathlib.Path(os.environ["RUNNER_TEMP"], "pgdata", "pg_service.conf")
+    assert pg_servicefile.resolve() == pg_servicefile_exp.resolve()
+    
+    if os.name == "nt":
+        pg_environ_exp = {
+            "PGBIN": "",
+            "PGDATA": "",
+            "PGPASSWORD": "",
+            "PGROOT": "",
+            "PGUSER": "",
+        }
+    else:
+        pg_environ_exp = {}
+    assert pg_environ == pg_environ_exp
 
 
 def test_user_permissions(connection: psycopg.Connection):
@@ -199,6 +224,19 @@ def test_client_applications(
     finally:
         subprocess.check_call(["dropdb", database])
         subprocess.check_call(["dropuser", username])
+
+
+def test_libpq_applications(service_name: str, monkeypatch: pytest.MonkeyPatch):
+    """Test that libpq-using applications can be used."""
+
+    # Request connection parameters from the connection service file prepared
+    # by our action.
+    monkeypatch.setenv("PGSERVICE", service_name)
+
+    with psycopg.connect() as connection:
+        assert connection \
+            .execute("SELECT usename FROM pg_user WHERE usename = CURRENT_USER") \
+            .fetchone()
 
 
 def test_auth_wrong_username(connection_factory: ConnectionFactory, connection_uri: str):

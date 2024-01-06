@@ -14,6 +14,19 @@ key features:
 
 ## Usage
 
+> [!IMPORTANT]
+>
+> In order to connect to a PostgreSQL server, use either connection parameters
+> from the table below ([link](#connection-parameters)), or retrieve a
+> connection URI from the `connection-uri` output ([link](#advanced)).
+
+> [!TIP]
+>
+> `libpq`-using applications may choose to set the `PGSERVICE=postgres`
+> environment variable instead ([link](#create-a-new-user-w-database-via-cli)),
+> where `postgres` is the service name extracted from the `service-name`
+> output.
+
 #### Connection parameters
 
 | Key      | Value                                               |
@@ -73,11 +86,10 @@ steps:
       createuser myuser
       createdb --owner myuser mydatabase
       psql -c "ALTER USER myuser WITH PASSWORD 'mypassword'"
-
     env:
       # This activates connection parameters for the superuser created by
       # the action in the step above. It's mandatory to set this before using
-      # createuser/psql/etc tools.
+      # createuser/psql and other libpq-using applications.
       #
       # The service name is the same as the username (i.e. 'postgres') but
       # it's recommended to use action's output to get the name in order to
