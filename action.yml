@@ -46,11 +46,18 @@ runs:
             echo "$name=" >> $GITHUB_ENV
           done
         elif [ "$RUNNER_OS" == "macOS" ]; then
+
+          # macOS 12 is the only runner having postgresql@14 preinstalled,
+          # but reinstalling it is a no-op.
+          brew install postgresql@14
+
           case "$(sw_vers -productVersion)" in
-            13.*)
-              # Unfortunately, the macOS 13 runner image doesn't come w/
-              # pre-installed PostgreSQL server.
-              brew install postgresql@14
+            12.*|13.*)
+              echo "/usr/local/opt/postgresql@14/bin" >> $GITHUB_PATH
+              ;;
+            14.*)
+              # Starting macOS 14 Homebrew switched to /opt/homebrew 
+              echo "/opt/homebrew/opt/postgresql@14/bin" >> $GITHUB_PATH
               ;;
           esac
         fi
