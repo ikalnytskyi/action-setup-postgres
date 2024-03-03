@@ -18,6 +18,7 @@ jobs:
           - windows-latest
           - macos-latest
           - macos-13
+          - macos-14
     steps:
       - uses: actions/checkout@v4
 
@@ -44,9 +45,51 @@ jobs:
           - ubuntu-latest
           - windows-latest
           - macos-latest
+          - macos-13
+          - macos-14
     steps:
       - uses: actions/checkout@v4
 
+      - name: Run setup-postgres
+        uses: ./
+        with:
+          username: yoda
+          password: GrandMaster
+          database: jedi_order
+          port: 34837
+        id: postgres
+
+      - name: Run tests
+        run: |
+          python3 -m pip install --upgrade pip pytest psycopg furl
+          python3 -m pytest -vv test_action.py
+        env:
+          CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
+          SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
+          EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order
+          EXPECTED_SERVICE_NAME: yoda
+        shell: bash
+
+  previousBrewSetup:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+          # brew does not support Windows
+          - ubuntu-latest
+          - macos-latest
+          - macos-13
+          - macos-14
+
+    env:
+      # Disable auto updating outdated unrelated packages to the latest versions
+      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Homebrew/actions/setup-homebrew@master
+        id: set-up-homebrew
       - name: Run setup-postgres
         uses: ./
         with:
