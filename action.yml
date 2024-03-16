@@ -50,7 +50,10 @@ runs:
             13.*)
               # Unfortunately, the macOS 13 runner image doesn't come w/
               # pre-installed PostgreSQL server.
-              brew install postgresql@14
+              export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+              export HOMEBREW_NO_INSTALL_CLEANUP=1
+              export HOMEBREW_NO_INSTALL_UPGRADE=1
+              brew install --skip-post-install postgresql@14
               ;;
           esac
         fi
