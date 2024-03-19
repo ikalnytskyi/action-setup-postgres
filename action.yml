@@ -47,7 +47,7 @@ runs:
           done
         elif [ "$RUNNER_OS" == "macOS" ]; then
           case "$(sw_vers -productVersion)" in
-            13.*)
+            13.*|14.*)
               # Unfortunately, the macOS 13 runner image doesn't come w/
               # pre-installed PostgreSQL server.
               export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
