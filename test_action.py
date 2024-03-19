@@ -76,13 +76,13 @@ def test_server_encoding(connection: psycopg.Connection):
 
 
 def test_locale(connection: psycopg.Connection):
-    """Test that PostgreSQL's locale is 'en_US.UTF-8'."""
+    """Test that PostgreSQL's locale is 'C'."""
 
     lc_collate = connection.execute("SHOW LC_COLLATE").fetchone()[0]
     lc_ctype = connection.execute("SHOW LC_CTYPE").fetchone()[0]
 
-    assert locale.normalize(lc_collate) == "en_US.UTF-8"
-    assert locale.normalize(lc_ctype) == "en_US.UTF-8"
+    assert locale.normalize(lc_collate) == "C"
+    assert locale.normalize(lc_ctype) == "C"
 
 
 def test_environment_variables():
