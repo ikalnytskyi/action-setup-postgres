@@ -83,7 +83,8 @@ runs:
           --pwfile="$PWFILE" \
           --auth="scram-sha-256" \
           --encoding="UTF-8" \
-          --locale="en_US.UTF-8" \
+          --locale-provider="icu" \
+          --icu-locale="und-x-icu" \
           --no-instructions
 
         # Do not create unix sockets since they are created by default in the
