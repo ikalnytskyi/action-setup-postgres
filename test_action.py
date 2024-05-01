@@ -13,6 +13,24 @@ ConnectionFactory = t.Callable[[str], psycopg.Connection]
 
 
 @pytest.fixture(scope="function")
+def is_windows() -> bool:
+    """Returns True if running on Windows."""
+
+    return os.name == "nt"
+
+
+@pytest.fixture(scope="function")
+def is_windows_server_2019(is_windows: bool) -> bool:
+    """Returns True if running on Windows Server 2019."""
+
+    if not is_windows:
+        return False
+
+    windows_caption = subprocess.check_output(["wmic", "os", "get", "Caption"], text=True)
+    return "Windows Server 2019" in windows_caption
+
+
+@pytest.fixture(scope="function")
 def connection_uri() -> str:
     """Read and return connection URI from environment."""
 
@@ -57,35 +75,40 @@ def connection(
     raise RuntimeError("f{request.param}: unknown value")
 
 
-def test_connection_uri(connection_uri):
+def test_connection_uri(connection_uri: str):
     """Test that CONNECTION_URI matches EXPECTED_CONNECTION_URI."""
 
     assert connection_uri == os.getenv("EXPECTED_CONNECTION_URI")
 
 
-def test_service_name(service_name):
+def test_service_name(service_name: str):
     """Test that SERVICE_NAME matches EXPECTED_SERVICE_NAME."""
 
     assert service_name == os.getenv("EXPECTED_SERVICE_NAME")
 
 
 def test_server_encoding(connection: psycopg.Connection):
-    """Test that PostgreSQL's encoding is 'UTF-8'."""
+    """Test that PostgreSQL's encoding matches the one we passed to initdb."""
 
     assert connection.execute("SHOW SERVER_ENCODING").fetchone()[0] == "UTF8"
 
 
-def test_locale(connection: psycopg.Connection):
-    """Test that PostgreSQL's locale is 'en_US.UTF-8'."""
+def test_locale(connection: psycopg.Connection, is_windows_server_2019: bool):
+    """Test that PostgreSQL's locale matches the one we paased to initdb."""
+
+    locale_exp = "en_US.UTF-8"
+
+    if is_windows_server_2019:
+        locale_exp = "en-US"
 
     lc_collate = connection.execute("SHOW LC_COLLATE").fetchone()[0]
     lc_ctype = connection.execute("SHOW LC_CTYPE").fetchone()[0]
 
-    assert locale.normalize(lc_collate) == "en_US.UTF-8"
-    assert locale.normalize(lc_ctype) == "en_US.UTF-8"
+    assert locale.normalize(lc_collate) == locale_exp
+    assert locale.normalize(lc_ctype) == locale_exp
 
 
-def test_environment_variables():
+def test_environment_variables(is_windows: bool):
     """Test that only expected 'PG*' variables are set."""
 
     pg_environ = {k: v for k, v in os.environ.items() if k.startswith("PG")}
@@ -96,7 +119,7 @@ def test_environment_variables():
     pg_servicefile_exp = pathlib.Path(os.environ["RUNNER_TEMP"], "pgdata", "pg_service.conf")
     assert pg_servicefile.resolve() == pg_servicefile_exp.resolve()
     
-    if os.name == "nt":
+    if is_windows:
         pg_environ_exp = {
             "PGBIN": "",
             "PGDATA": "",
