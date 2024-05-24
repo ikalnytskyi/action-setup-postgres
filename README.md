@@ -1,5 +1,9 @@
 # setup-postgres
 
+[![GitHub](https://img.shields.io/badge/github-ikalnytskyi/action--setup--postgres-8da0cb?logo=github)](https://github.com/ikalnytskyi/action-setup-postgres)
+[![CI build](https://github.com/ikalnytskyi/action-setup-postgres/actions/workflows/ci.yml/badge.svg)](https://github.com/ikalnytskyi/action-setup-postgres/actions)
+[![Marketplace](https://img.shields.io/badge/market-setup--postgres-6F42C1?logo=github)](https://github.com/marketplace/actions/setup-postgresql-for-linux-macos-windows)
+
 This action sets up a PostgreSQL server for the rest of the job. Here are some
 key features:
 
@@ -17,7 +21,7 @@ key features:
 > [!IMPORTANT]
 >
 > In order to connect to a PostgreSQL server, use either connection parameters
-> from the table below ([link](#connection-parameters)), or retrieve a
+> from the table below ([link](#outputs)), or retrieve a
 > connection URI from the `connection-uri` output ([link](#advanced)).
 
 > [!TIP]
@@ -27,17 +31,21 @@ key features:
 > where `postgres` is the service name extracted from the `service-name`
 > output.
 
-#### Connection parameters
+#### Action Parameters
 
-| Key      | Value                                               |
-|----------|-----------------------------------------------------|
-| URI      | `postgresql://postgres:postgres@localhost/postgres` |
-| Host     | `localhost`                                         |
-| Port     | `5432`                                              |
-| Username | `postgres`                                          |
-| Password | `postgres`                                          |
-| Database | `postgres`                                          |
-| Service  | `postgres`                                          |
+| Key        | Value                                                                                                | Default     |
+|------------|------------------------------------------------------------------------------------------------------|-------------|
+| username   | The username of the user to setup.                                                                   | `postgres`  |
+| password   | The password of the user to setup.                                                                   | `postgres`  |
+| database   | The database name to setup and grant permissions to created user.                                    | `postgres`  |
+| port       | The server port to listen on.                                                                        | `5432`      |
+
+#### Outputs
+
+| Key            | Description                                  | Example                                             |
+|----------------|----------------------------------------------|-----------------------------------------------------|
+| connection-uri | The connection URI to connect to PostgreSQL. | `postgresql://postgres:postgres@localhost/postgres` |
+| service-name   | The service name with connection parameters. | `postgres`                                          |
 
 #### User permissions
 
