@@ -10,6 +10,7 @@ key features:
 * Runs on Linux, macOS and Windows action runners.
 * Adds PostgreSQL [client applications][1] to `PATH`.
 * PostgreSQL version can be parametrized.
+* Supports SSL if needed.
 * Easy [to verify][2] that it DOES NOT contain malicious code.
 
 By default PostgreSQL 15 is used.
@@ -44,10 +45,11 @@ By default PostgreSQL 15 is used.
 
 #### Outputs
 
-| Key            | Description                                  | Example                                             |
-|----------------|----------------------------------------------|-----------------------------------------------------|
-| connection-uri | The connection URI to connect to PostgreSQL. | `postgresql://postgres:postgres@localhost/postgres` |
-| service-name   | The service name with connection parameters. | `postgres`                                          |
+| Key              | Description                                      | Example                                             |
+|------------------|--------------------------------------------------|-----------------------------------------------------|
+| connection-uri   | The connection URI to connect to PostgreSQL.     | `postgresql://postgres:postgres@localhost/postgres` |
+| service-name     | The service name with connection parameters.     | `postgres`                                          |
+| certificate-path | The path to the server certificate if SSL is on. | `/home/runner/work/_temp/pgdata/server.crt`         |
 
 #### User permissions
 
@@ -74,6 +76,7 @@ steps:
       database: test
       port: 34837
       postgres-version: "14"
+      ssl: "on"
     id: postgres
 
   - run: pytest -vv tests/

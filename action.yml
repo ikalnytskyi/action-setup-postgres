@@ -24,6 +24,9 @@ inputs:
   postgres-version:
     description: The PostgreSQL major version to install. Either "14", "15", or "16".
     default: "16"
+  ssl:
+    description: When "true", encrypt connections using SSL (TLS).
+    default: "false"
     required: false
 outputs:
   connection-uri:
@@ -32,6 +35,9 @@ outputs:
   service-name:
     description: The service name with connection parameters.
     value: ${{ steps.set-outputs.outputs.service-name }}
+  certificate-path:
+    description: The path to the server certificate if SSL is on.
+    value: ${{ steps.set-outputs.outputs.certificate-path }}
 runs:
   using: composite
   steps:
@@ -132,6 +138,23 @@ runs:
         # directory we have no permissions to (owned by system postgres user).
         echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
         echo "port = ${{ inputs.port }}" >> "$PGDATA/postgresql.conf"
+
+        if [ "${{ inputs.ssl }}" = "true" ]; then
+          # On Windows, bash runs on top of MSYS2, which automatically converts
+          # Unix paths to Windows paths for every argument that appears to be a
+          # path. This behavior breaks the openssl invocation because the
+          # subject argument is mistakenly converted when it should not be.
+          # Therefore, we need to exclude it from the path conversion process
+          # by setting the MSYS2_ARG_CONV_EXCL environment variable.
+          #
+          # https://www.msys2.org/docs/filesystem-paths/#automatic-unix-windows-path-conversion
+          export MSYS2_ARG_CONV_EXCL="/CN"
+          openssl req -new -x509 -days 365 -nodes -text -subj "/CN=localhost" \
+            -out "$PGDATA/server.crt" -keyout "$PGDATA/server.key"
+          chmod og-rwx "$PGDATA/server.key" "$PGDATA/server.crt"
+          echo "ssl = on" >> "$PGDATA/postgresql.conf"
+        fi
+
         pg_ctl start --pgdata="$PGDATA"
 
         # Save required connection parameters for created superuser to the
@@ -154,6 +177,12 @@ runs:
         password=${{ inputs.password }}
         dbname=${{ inputs.database }}
         EOF
+
+        if [ "${{ inputs.ssl }}" = "true" ]; then
+          echo "sslmode=verify-ca" >> "$PGDATA/pg_service.conf"
+          echo "sslrootcert=$PGDATA/server.crt" >> "$PGDATA/pg_service.conf"
+        fi
+
         echo "PGSERVICEFILE=$PGDATA/pg_service.conf" >> $GITHUB_ENV
       shell: bash
 
@@ -173,6 +202,17 @@ runs:
     - name: Set action outputs
       run: |
         CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost:${{ inputs.port }}/${{ inputs.database }}"
+        CERTIFICATE_PATH="$RUNNER_TEMP/pgdata/server.crt"
+
+        if [ "${{ inputs.ssl }}" = "true" ]; then
+          # Although SSLMODE and SSLROOTCERT are specific to libpq options,
+          # most third-party drivers also support them. By default libpq
+          # prefers SSL but doesn't require it, thus it's important to set
+          # these options to ensure SSL is used and the certificate is
+          # verified.
+          CONNECTION_URI="$CONNECTION_URI?sslmode=verify-ca&sslrootcert=$CERTIFICATE_PATH"
+          echo "certificate-path=$CERTIFICATE_PATH" >> $GITHUB_OUTPUT
+        fi
 
         echo "connection-uri=$CONNECTION_URI" >> $GITHUB_OUTPUT
         echo "service-name=${{ inputs.username }}" >> $GITHUB_OUTPUT
