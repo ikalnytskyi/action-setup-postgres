@@ -63,6 +63,9 @@ steps:
       password: sw0rdfish
       database: test
       port: 34837
+      ssl: "on"
+      # If ssl isn't "on", ca_file_output won't have any effect
+      ca_file_output: "some_path_suitable_for_you"
     id: postgres
 
   - run: pytest -vv tests/
