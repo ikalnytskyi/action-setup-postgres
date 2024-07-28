@@ -8,6 +8,10 @@ on:
   schedule:
     - cron: "0 8 * * *"
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   default:
     runs-on: ${{ matrix.os }}
@@ -42,7 +46,6 @@ jobs:
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
           EXPECTED_CONNECTION_URI: postgresql://postgres:postgres@localhost:5432/postgres
           EXPECTED_SERVICE_NAME: postgres
-        shell: bash
 
   parametrized:
     runs-on: ${{ matrix.os }}
@@ -78,4 +81,3 @@ jobs:
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
           EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order
           EXPECTED_SERVICE_NAME: yoda
-        shell: bash
