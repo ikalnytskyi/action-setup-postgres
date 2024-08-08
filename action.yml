@@ -103,20 +103,14 @@ runs:
         echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
         echo "port = ${{ inputs.port }}" >> "$PGDATA/postgresql.conf"
         pg_ctl start
+      shell: bash
 
-        # Save required connection parameters for created superuser to the
-        # connection service file [1]. This allows using these connection
-        # parameters by setting 'PGSERVICE' environment variable or by
-        # requesting them via connection string.
-        #
-        # HOST is required for Linux/macOS because these OS-es default to unix
-        # sockets but we turned them off.
-        #
-        # PORT, USER, PASSWORD and DBNAME are required because they could be
-        # parametrized via action input parameters.
-        #
-        # [1] https://www.postgresql.org/docs/15/libpq-pgservice.html
-        cat <<EOF > "$PGDATA/pg_service.conf"
+    - name: Setup the connection service file
+      run: |
+        PGSERVICEFILE="$(pg_config --sysconfdir)/pg_service.conf"
+        PGSERVICEFILE_TMP="$RUNNER_TEMP/pg_service.conf"
+
+        cat << EOF > "$PGSERVICEFILE_TMP"
         [${{ inputs.username }}]
         host=localhost
         port=${{ inputs.port }}
@@ -124,7 +118,15 @@ runs:
         password=${{ inputs.password }}
         dbname=${{ inputs.database }}
         EOF
-        echo "PGSERVICEFILE=$PGDATA/pg_service.conf" >> $GITHUB_ENV
+
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          SUDO=""
+        else
+          SUDO="sudo"
+        fi
+
+        $SUDO mkdir -p "$(dirname "$PGSERVICEFILE")"
+        $SUDO mv "$PGSERVICEFILE_TMP" "$PGSERVICEFILE"
       shell: bash
 
     - name: Setup PostgreSQL database

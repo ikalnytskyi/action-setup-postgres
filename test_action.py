@@ -113,12 +113,6 @@ def test_environment_variables(is_windows: bool):
 
     pg_environ = {k: v for k, v in os.environ.items() if k.startswith("PG")}
 
-    # In case of Windows, there might be a mix of forward and backward slashes
-    # as separators. So let's compare paths semantically instead.
-    pg_servicefile = pathlib.Path(pg_environ.pop("PGSERVICEFILE", ""))
-    pg_servicefile_exp = pathlib.Path(os.environ["RUNNER_TEMP"], "pgdata", "pg_service.conf")
-    assert pg_servicefile.resolve() == pg_servicefile_exp.resolve()
-    
     if is_windows:
         pg_environ_exp = {
             "PGBIN": "",
