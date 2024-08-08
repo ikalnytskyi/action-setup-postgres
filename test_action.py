@@ -101,11 +101,19 @@ def test_locale(connection: psycopg.Connection, is_windows_server_2019: bool):
     if is_windows_server_2019:
         locale_exp = "en-US"
 
-    lc_collate = connection.execute("SHOW LC_COLLATE").fetchone()[0]
-    lc_ctype = connection.execute("SHOW LC_CTYPE").fetchone()[0]
+    record = connection \
+        .execute("SELECT datcollate, datctype FROM pg_database WHERE datname = 'template0'") \
+        .fetchone()
+    assert record
+    assert locale.normalize(record[0]) == locale_exp
+    assert locale.normalize(record[1]) == locale_exp
 
-    assert locale.normalize(lc_collate) == locale_exp
-    assert locale.normalize(lc_ctype) == locale_exp
+    record = connection \
+        .execute("SELECT datcollate, datctype FROM pg_database WHERE datname = 'template1'") \
+        .fetchone()
+    assert record
+    assert locale.normalize(record[0]) == locale_exp
+    assert locale.normalize(record[1]) == locale_exp
 
 
 def test_environment_variables(is_windows: bool):
