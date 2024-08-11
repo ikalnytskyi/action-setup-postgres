@@ -21,6 +21,10 @@ inputs:
     description: The server port to listen on.
     default: "5432"
     required: false
+  postgres-version:
+    description: The PostgreSQL major version to install. Either "14", "15", or "16".
+    default: "16"
+    required: false
 outputs:
   connection-uri:
     description: The connection URI to connect to PostgreSQL.
@@ -31,38 +35,63 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: Prerequisites
+    - name: Install PostgreSQL
       run: |
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          echo "$(pg_config --bindir)" >> $GITHUB_PATH
-        elif [ "$RUNNER_OS" == "Windows" ]; then
-          echo "$PGBIN" >> $GITHUB_PATH
-          echo "PQ_LIB_DIR=$PGROOT\lib" >> $GITHUB_ENV
+        if [[ ! "${{ inputs.postgres-version }}" =~ ^(14|15|16)$ ]]; then
+          echo "::error::postgres-version must be one of: 14, 15, 16."
+          exit 1
+        fi
 
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          APT_ENTRY="deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main"
+          APT_KEY="https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+
+          echo "$APT_ENTRY" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          wget --quiet -O - "$APT_KEY" | sudo apt-key add -
+          sudo apt-get update
+          sudo apt-get -y install postgresql-${{ inputs.postgres-version }}
+
+          PG_BINDIR=$("/usr/lib/postgresql/${{ inputs.postgres-version }}/bin/pg_config" --bindir)
+          echo "$PG_BINDIR" >> $GITHUB_PATH
+
+        elif [ "$RUNNER_OS" == "Windows" ]; then
           # The Windows runner has some PostgreSQL environment variables set
           # that may confuse users since they may be irrelevant to the
-          # PostgreSQL server we're using.
+          # PostgreSQL server we're using. Since GitHub actions does not
+          # support unsetting environment variables, the best we can do is to
+          # clear their values in order to indicate they must not be used.
           for name in "PGROOT" "PGDATA" "PGBIN" "PGUSER" "PGPASSWORD"; do
             echo "$name=" >> $GITHUB_ENV
           done
+
+          choco install postgresql${{ inputs.postgres-version }} \
+            --params "/Password:${{ inputs.password }}" \
+            --ia "--enable-components server,commandlinetools --extract-only 1" \
+            --no-progress
+
+          PG_BINDIR=$("$PROGRAMFILES/PostgreSQL/${{ inputs.postgres-version }}/bin/pg_config.exe" --bindir)
+          PG_LIBDIR=$("$PROGRAMFILES/PostgreSQL/${{ inputs.postgres-version }}/bin/pg_config.exe" --libdir)
+
+          echo "$PG_BINDIR" >> $GITHUB_PATH
+          echo "PQ_LIB_DIR=$PG_LIBDIR" >> $GITHUB_ENV
+
         elif [ "$RUNNER_OS" == "macOS" ]; then
-          case "$(sw_vers -productVersion)" in
-            13.*|14.*)
-              # Unfortunately, the macOS 13 runner image doesn't come w/
-              # pre-installed PostgreSQL server.
-              export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-              export HOMEBREW_NO_INSTALL_CLEANUP=1
-              export HOMEBREW_NO_INSTALL_UPGRADE=1
-              brew install --skip-post-install postgresql@14
-              ;;
-          esac
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          export HOMEBREW_NO_INSTALL_CLEANUP=1
+          export HOMEBREW_NO_INSTALL_UPGRADE=1
+          brew install --skip-post-install postgresql@${{ inputs.postgres-version }}
+
+          # Link PostgreSQL binaries from /usr/local/bin in order to make them
+          # available globally. The overwrite option is required since some
+          # GitHub runners come with preinstalled PostgreSQL binaries.
+          brew link --overwrite postgresql@${{ inputs.postgres-version }}
         fi
       shell: bash
 
     - name: Setup and start PostgreSQL
       run: |
-        export PGDATA="$RUNNER_TEMP/pgdata"
-        export PWFILE="$RUNNER_TEMP/pwfile"
+        PGDATA="$RUNNER_TEMP/pgdata"
+        PWFILE="$RUNNER_TEMP/pwfile"
 
         DEFAULT_ENCODING="UTF-8"
         DEFAULT_LOCALE="en_US.$DEFAULT_ENCODING"
@@ -91,6 +120,7 @@ runs:
         #
         # [1] https://www.postgresql.org/docs/15/reference-client.html
         initdb \
+          --pgdata="$PGDATA" \
           --username="${{ inputs.username }}" \
           --pwfile="$PWFILE" \
           --auth="scram-sha-256" \
@@ -102,7 +132,7 @@ runs:
         # directory we have no permissions to (owned by system postgres user).
         echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
         echo "port = ${{ inputs.port }}" >> "$PGDATA/postgresql.conf"
-        pg_ctl start
+        pg_ctl start --pgdata="$PGDATA"
 
         # Save required connection parameters for created superuser to the
         # connection service file [1]. This allows using these connection

@@ -9,12 +9,13 @@ key features:
 
 * Runs on Linux, macOS and Windows action runners.
 * Adds PostgreSQL [client applications][1] to `PATH`.
-* Uses PostgreSQL binaries baked into [GitHub Actions Runner Images][2].
-* Easy [to prove][3] that it DOES NOT contain malicious code.
+* PostgreSQL version can be parametrized.
+* Easy [to verify][2] that it DOES NOT contain malicious code.
+
+By default PostgreSQL 15 is used.
 
 [1]: https://www.postgresql.org/docs/current/reference-client.html
-[2]: https://github.com/actions/runner-images
-[3]: action.yml
+[2]: action.yml
 
 ## Usage
 
@@ -33,12 +34,13 @@ key features:
 
 #### Action Parameters
 
-| Key        | Value                                                                                                | Default     |
-|------------|------------------------------------------------------------------------------------------------------|-------------|
-| username   | The username of the user to setup.                                                                   | `postgres`  |
-| password   | The password of the user to setup.                                                                   | `postgres`  |
-| database   | The database name to setup and grant permissions to created user.                                    | `postgres`  |
-| port       | The server port to listen on.                                                                        | `5432`      |
+| Key              | Value                                                                              | Default     |
+|------------------|------------------------------------------------------------------------------------|-------------|
+| username         | The username of the user to setup.                                                 | `postgres`  |
+| password         | The password of the user to setup.                                                 | `postgres`  |
+| database         | The database name to setup and grant permissions to created user.                  | `postgres`  |
+| port             | The server port to listen on.                                                      | `5432`      |
+| postgres-version | The PostgreSQL major version to install. Supported values: "14", "15", "16".       | `16`        |
 
 #### Outputs
 
@@ -58,19 +60,20 @@ key features:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6 
+  - uses: ikalnytskyi/action-setup-postgres@v6
 ```
 
 #### Advanced
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6 
+  - uses: ikalnytskyi/action-setup-postgres@v6
     with:
       username: ci
       password: sw0rdfish
       database: test
       port: 34837
+      postgres-version: "14"
     id: postgres
 
   - run: pytest -vv tests/
@@ -88,7 +91,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6 
+  - uses: ikalnytskyi/action-setup-postgres@v6
 
   - run: |
       createuser myuser
@@ -110,7 +113,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6 
+  - uses: ikalnytskyi/action-setup-postgres@v6
 ```
 
 ```python
