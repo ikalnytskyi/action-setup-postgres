@@ -40,8 +40,8 @@ jobs:
 
       - name: Run tests
         run: |
-          python3 -m pip install --upgrade pip pytest psycopg furl cryptography
-          python3 -m pytest -vv test_action.py
+          python3 -m pip install -r tests/requirements.txt
+          python3 -m pytest -vv tests/test_action.py
         env:
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
@@ -88,8 +88,8 @@ jobs:
 
       - name: Run tests
         run: |
-          python3 -m pip install --upgrade pip pytest psycopg furl cryptography
-          python3 -m pytest -vv test_action.py
+          python3 -m pip install -r tests/requirements.txt
+          python3 -m pytest -vv tests/test_action.py
         env:
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
