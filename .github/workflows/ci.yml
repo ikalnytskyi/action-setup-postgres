@@ -40,14 +40,16 @@ jobs:
 
       - name: Run tests
         run: |
-          python3 -m pip install --upgrade pip pytest psycopg furl
+          python3 -m pip install --upgrade pip pytest psycopg furl cryptography
           python3 -m pytest -vv test_action.py
         env:
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
+          CERTIFICATE_PATH: ${{ steps.postgres.outputs.certificate-path }}
           EXPECTED_CONNECTION_URI: postgresql://postgres:postgres@localhost:5432/postgres
           EXPECTED_SERVICE_NAME: postgres
           EXPECTED_SERVER_VERSION: "16"
+          EXPECTED_SSL: false
 
   parametrized:
     runs-on: ${{ matrix.os }}
@@ -76,6 +78,7 @@ jobs:
           database: jedi_order
           port: 34837
           postgres-version: ${{ matrix.postgres-version }}
+          ssl: true
         id: postgres
 
       - name: Run setup-python
@@ -85,11 +88,13 @@ jobs:
 
       - name: Run tests
         run: |
-          python3 -m pip install --upgrade pip pytest psycopg furl
+          python3 -m pip install --upgrade pip pytest psycopg furl cryptography
           python3 -m pytest -vv test_action.py
         env:
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
-          EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order
+          CERTIFICATE_PATH: ${{ steps.postgres.outputs.certificate-path }}
+          EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order?sslmode=verify-ca&sslrootcert=${{ steps.postgres.outputs.certificate-path }}
           EXPECTED_SERVICE_NAME: yoda
           EXPECTED_SERVER_VERSION: ${{ matrix.postgres-version }}
+          EXPECTED_SSL: true
