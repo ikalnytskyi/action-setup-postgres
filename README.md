@@ -16,26 +16,7 @@ key features:
 [1]: https://www.postgresql.org/docs/current/reference-client.html
 [2]: action.yml
 
-## Usage
-
-> [!IMPORTANT]
->
-> In order to connect to a PostgreSQL server, either use connection parameters
-> directly (refer to the table below for default values), or, preferably,
-> obtain a connection URI from the `connection-uri` output ([example]).
->
-> [example]: #advanced
-
-> [!TIP]
->
-> For `libpq`-based applications, such as PostgreSQL client applications, set
-> the `PGSERVICE=postgres` environment variable to automatically use the
-> correct connection parameters ([example]). The `postgres` value corresponds
-> to the service name from the `service-name` output.
->
-> [example]: #create-a-new-user-w-database-via-cli
-
-#### Action Parameters
+#### Inputs
 
 | Key              | Value                                                                              | Default     |
 |------------------|------------------------------------------------------------------------------------|-------------|
@@ -59,6 +40,27 @@ key features:
 |-------------|-------|
 | usesuper    | true  |
 | usecreatedb | true  |
+
+
+## Usage
+
+> [!IMPORTANT]
+>
+> In order to connect to a PostgreSQL server, either use connection parameters
+> directly (refer to the [inputs] table for default values), or, preferably,
+> obtain a connection URI from the `connection-uri` output ([example]).
+>
+> [inputs]: #inputs
+> [example]: #advanced
+
+> [!TIP]
+>
+> For `libpq`-based applications, such as PostgreSQL client applications, set
+> the `PGSERVICE=postgres` environment variable to automatically use the
+> correct connection parameters ([example]). The `postgres` value corresponds
+> to the service name from the `service-name` output.
+>
+> [example]: #create-a-new-user-w-database-via-cli
 
 #### Basic
 
