@@ -1,19 +1,17 @@
 # setup-postgres
 
-[![GitHub](https://img.shields.io/badge/github-ikalnytskyi/action--setup--postgres-8da0cb?logo=github)](https://github.com/ikalnytskyi/action-setup-postgres)
 [![CI build](https://github.com/ikalnytskyi/action-setup-postgres/actions/workflows/ci.yml/badge.svg)](https://github.com/ikalnytskyi/action-setup-postgres/actions)
-[![Marketplace](https://img.shields.io/badge/market-setup--postgres-6F42C1?logo=github)](https://github.com/marketplace/actions/setup-postgresql-for-linux-macos-windows)
+[![GitHub](https://img.shields.io/badge/github-ikalnytskyi/action--setup--postgres-3795BD?logo=github)](https://github.com/ikalnytskyi/action-setup-postgres)
+[![Marketplace](https://img.shields.io/badge/market-setup--postgres-4E31AA?logo=github)](https://github.com/marketplace/actions/setup-postgresql-for-linux-macos-windows)
 
 This action sets up a PostgreSQL server for the rest of the job. Here are some
 key features:
 
 * Runs on Linux, macOS and Windows action runners.
-* Adds PostgreSQL [client applications][1] to `PATH`.
 * PostgreSQL version can be parametrized.
-* Supports SSL if needed.
+* Adds PostgreSQL [client applications][1] to `PATH`.
+* Supports SSL on-demand.
 * Easy [to verify][2] that it DOES NOT contain malicious code.
-
-By default PostgreSQL 15 is used.
 
 [1]: https://www.postgresql.org/docs/current/reference-client.html
 [2]: action.yml
@@ -22,16 +20,20 @@ By default PostgreSQL 15 is used.
 
 > [!IMPORTANT]
 >
-> In order to connect to a PostgreSQL server, use either connection parameters
-> from the table below ([link](#outputs)), or retrieve a
-> connection URI from the `connection-uri` output ([link](#advanced)).
+> In order to connect to a PostgreSQL server, either use connection parameters
+> directly (refer to the table below for default values), or, preferably,
+> obtain a connection URI from the `connection-uri` output ([example]).
+>
+> [example]: #advanced
 
 > [!TIP]
 >
-> `libpq`-using applications may choose to set the `PGSERVICE=postgres`
-> environment variable instead ([link](#create-a-new-user-w-database-via-cli)),
-> where `postgres` is the service name extracted from the `service-name`
-> output.
+> For `libpq`-based applications, such as PostgreSQL client applications, set
+> the `PGSERVICE=postgres` environment variable to automatically use the
+> correct connection parameters ([example]). The `postgres` value corresponds
+> to the service name from the `service-name` output.
+>
+> [example]: #create-a-new-user-w-database-via-cli
 
 #### Action Parameters
 
@@ -76,8 +78,12 @@ steps:
       database: test
       port: 34837
       postgres-version: "14"
-      ssl: "on"
+      ssl: true
     id: postgres
+
+  - run: pytest -vv tests/
+    env:
+      CONNECTION_STR: postgresql://ci:sw0rdfish@localhost:34837/test
 
   - run: pytest -vv tests/
     env:
@@ -95,6 +101,7 @@ steps:
 ```yaml
 steps:
   - uses: ikalnytskyi/action-setup-postgres@v6
+    id: postgres
 
   - run: |
       createuser myuser
@@ -103,7 +110,8 @@ steps:
     env:
       # This activates connection parameters for the superuser created by
       # the action in the step above. It's mandatory to set this before using
-      # createuser/psql and other libpq-using applications.
+      # createuser/psql and other libpq-based applications. Otherwise, one
+      # would need to supply connection parameters via command line arguments.
       #
       # The service name is the same as the username (i.e. 'postgres') but
       # it's recommended to use action's output to get the name in order to
