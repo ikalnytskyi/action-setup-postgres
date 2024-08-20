@@ -13,7 +13,7 @@ key features:
 * Supports SSL if needed.
 * Easy [to verify][2] that it DOES NOT contain malicious code.
 
-By default PostgreSQL 15 is used.
+By default PostgreSQL 16 is used.
 
 [1]: https://www.postgresql.org/docs/current/reference-client.html
 [2]: action.yml
