@@ -24,7 +24,7 @@ key features:
 | password         | The password of the user to setup.                                                 | `postgres`  |
 | database         | The database name to setup and grant permissions to created user.                  | `postgres`  |
 | port             | The server port to listen on.                                                      | `5432`      |
-| postgres-version | The PostgreSQL major version to install. Supported values: "14", "15", "16".       | `16`        |
+| postgres-version | The PostgreSQL major version to install. Supported values: "14", "15", "16", "17". | `17`        |
 
 #### Outputs
 

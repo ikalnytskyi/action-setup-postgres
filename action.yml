@@ -22,8 +22,8 @@ inputs:
     default: "5432"
     required: false
   postgres-version:
-    description: The PostgreSQL major version to install. Either "14", "15", or "16".
-    default: "16"
+    description: The PostgreSQL major version to install. Either "14", "15", "16" or "17".
+    default: "17"
   ssl:
     description: When "true", encrypt connections using SSL (TLS).
     default: "false"
@@ -43,8 +43,8 @@ runs:
   steps:
     - name: Install PostgreSQL
       run: |
-        if [[ ! "${{ inputs.postgres-version }}" =~ ^(14|15|16)$ ]]; then
-          echo "::error::postgres-version must be one of: 14, 15, 16."
+        if [[ ! "${{ inputs.postgres-version }}" =~ ^(14|15|16|17)$ ]]; then
+          echo "::error::postgres-version must be one of: 14, 15, 16, 17."
           exit 1
         fi
 
@@ -82,11 +82,15 @@ runs:
           echo "PQ_LIB_DIR=$PG_LIBDIR" >> $GITHUB_ENV
 
         elif [ "$RUNNER_OS" == "macOS" ]; then
+          # HOMEBREW_GITHUB_ACTIONS is used to skip 'initdb' execution to save
+          # some seconds. That invocation is not needed because of initdb
+          # invocation below.
+          export HOMEBREW_GITHUB_ACTIONS=1
           export HOMEBREW_NO_ENV_HINTS=1
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
           export HOMEBREW_NO_INSTALL_CLEANUP=1
           export HOMEBREW_NO_INSTALL_UPGRADE=1
-          brew install --quiet --skip-post-install postgresql@${{ inputs.postgres-version }}
+          brew install --quiet postgresql@${{ inputs.postgres-version }}
 
           # Link PostgreSQL binaries from /usr/local/bin in order to make them
           # available globally. The --overwrite option is required since some

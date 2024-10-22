@@ -48,7 +48,7 @@ jobs:
           CERTIFICATE_PATH: ${{ steps.postgres.outputs.certificate-path }}
           EXPECTED_CONNECTION_URI: postgresql://postgres:postgres@localhost:5432/postgres
           EXPECTED_SERVICE_NAME: postgres
-          EXPECTED_SERVER_VERSION: "16"
+          EXPECTED_SERVER_VERSION: "17"
           EXPECTED_SSL: false
 
   parametrized:
@@ -67,6 +67,7 @@ jobs:
         postgres-version:
           - "14"
           - "15"
+          - "16"
     steps:
       - uses: actions/checkout@v4
 
