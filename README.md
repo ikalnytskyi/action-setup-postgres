@@ -1,39 +1,22 @@
 # setup-postgres
 
-[![GitHub](https://img.shields.io/badge/github-ikalnytskyi/action--setup--postgres-8da0cb?logo=github)](https://github.com/ikalnytskyi/action-setup-postgres)
-[![CI build](https://github.com/ikalnytskyi/action-setup-postgres/actions/workflows/ci.yml/badge.svg)](https://github.com/ikalnytskyi/action-setup-postgres/actions)
-[![Marketplace](https://img.shields.io/badge/market-setup--postgres-6F42C1?logo=github)](https://github.com/marketplace/actions/setup-postgresql-for-linux-macos-windows)
+[![CI build](https://img.shields.io/github/actions/workflow/status/ikalnytskyi/action-setup-postgres/ci.yml?style=for-the-badge&logo=github&label=Tests)](https://github.com/ikalnytskyi/action-setup-postgres/actions)
+[![GitHub](https://img.shields.io/badge/github-ikalnytskyi/action--setup--postgres-3795BD?logo=github&style=for-the-badge)](https://github.com/ikalnytskyi/action-setup-postgres)
+[![Marketplace](https://img.shields.io/badge/market-setup--postgres-4E31AA?logo=github&style=for-the-badge)](https://github.com/marketplace/actions/setup-postgresql-for-linux-macos-windows)
 
 This action sets up a PostgreSQL server for the rest of the job. Here are some
 key features:
 
 * Runs on Linux, macOS and Windows action runners.
-* Adds PostgreSQL [client applications][1] to `PATH`.
 * PostgreSQL version can be parametrized.
-* Supports SSL if needed.
+* Adds PostgreSQL [client applications][1] to `PATH`.
+* Supports SSL on-demand.
 * Easy [to verify][2] that it DOES NOT contain malicious code.
-
-By default PostgreSQL 15 is used.
 
 [1]: https://www.postgresql.org/docs/current/reference-client.html
 [2]: action.yml
 
-## Usage
-
-> [!IMPORTANT]
->
-> In order to connect to a PostgreSQL server, use either connection parameters
-> from the table below ([link](#outputs)), or retrieve a
-> connection URI from the `connection-uri` output ([link](#advanced)).
-
-> [!TIP]
->
-> `libpq`-using applications may choose to set the `PGSERVICE=postgres`
-> environment variable instead ([link](#create-a-new-user-w-database-via-cli)),
-> where `postgres` is the service name extracted from the `service-name`
-> output.
-
-#### Action Parameters
+#### Inputs
 
 | Key              | Value                                                                              | Default     |
 |------------------|------------------------------------------------------------------------------------|-------------|
@@ -58,14 +41,55 @@ By default PostgreSQL 15 is used.
 | usesuper    | true  |
 | usecreatedb | true  |
 
+
+## Usage
+
+> [!IMPORTANT]
+>
+> In order to connect to a PostgreSQL server, either use connection parameters
+> directly (see [basic] example), or, preferably, obtain a connection URI from
+> the `connection-uri` output (see [recommended] example).
+>
+> [basic]: #basic
+> [recommended]: #recommended
+
+> [!TIP]
+>
+> For `libpq`-based applications, such as PostgreSQL client applications, set
+> the `PGSERVICE=postgres` environment variable to automatically use the
+> correct connection parameters (see [example]). The `postgres` value
+> corresponds to the service name from the `service-name` output.
+>
+> [example]: #how-do-i-create-a-new-database-with-a-new-user
+
 #### Basic
 
 ```yaml
 steps:
   - uses: ikalnytskyi/action-setup-postgres@v6
+
+  - run: psql postgresql://postgres:postgres@localhost:5432/postgres -c "SELECT 1"
+  - run: psql service=postgres -c "SELECT 1"
+  - run: psql -c "SELECT 1"
+    env:
+      PGSERVICE: postgres
 ```
 
-#### Advanced
+#### Recommended
+
+```yaml
+steps:
+  - uses: ikalnytskyi/action-setup-postgres@v6
+    id: postgres
+
+  - run: psql ${{ steps.postgres.outputs.connection-uri }} -c "SELECT 1"
+  - run: psql service=${{ steps.postgres.outputs.service-name }} -c "SELECT 1"
+  - run: psql -c "SELECT 1"
+    env:
+      PGSERVICE: ${{ steps.postgres.outputs.service-name }}
+```
+
+#### Parametrized
 
 ```yaml
 steps:
@@ -76,61 +100,31 @@ steps:
       database: test
       port: 34837
       postgres-version: "14"
-      ssl: "on"
+      ssl: true
     id: postgres
 
-  - run: pytest -vv tests/
+  - run: psql ${{ steps.postgres.outputs.connection-uri }} -c "SELECT 1"
+  - run: psql service=${{ steps.postgres.outputs.service-name }} -c "SELECT 1"
+  - run: psql -c "SELECT 1"
     env:
-      CONNECTION_STR: ${{ steps.postgres.outputs.connection-uri }}
-
-  - run: pytest -vv tests/
-    env:
-      CONNECTION_STR: service=${{ steps.postgres.outputs.service-name }}
+      PGSERVICE: ${{ steps.postgres.outputs.service-name }}
 ```
 
-## Recipes
+## FAQ
 
-#### Create a new user w/ database via CLI
+#### How do I create a new database with a new user?
 
 ```yaml
 steps:
   - uses: ikalnytskyi/action-setup-postgres@v6
+    id: postgres
 
-  - run: |
+  - env:
+      PGSERVICE: "${{ steps.postgres.outputs.service-name }}"
+    run: |
       createuser myuser
       createdb --owner myuser mydatabase
       psql -c "ALTER USER myuser WITH PASSWORD 'mypassword'"
-    env:
-      # This activates connection parameters for the superuser created by
-      # the action in the step above. It's mandatory to set this before using
-      # createuser/psql and other libpq-using applications.
-      #
-      # The service name is the same as the username (i.e. 'postgres') but
-      # it's recommended to use action's output to get the name in order to
-      # be forward compatible.
-      PGSERVICE: ${{ steps.postgres.outputs.service-name }}
-    shell: bash
-```
-
-#### Create a new user w/ database via psycopg
-
-```yaml
-steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6
-```
-
-```python
-import psycopg
-
-# 'postgres' is the username here, but it's recommended to use the
-# action's 'service-name' output parameter here.
-connection = psycopg.connect("service=postgres")
-
-# CREATE/DROP USER statements don't work within transactions, and with
-# autocommit disabled transactions are created by psycopg automatically.
-connection.autocommit = True
-connection.execute(f"CREATE USER myuser WITH PASSWORD 'mypassword'")
-connection.execute(f"CREATE DATABASE mydatabase WITH OWNER 'myuser'")
 ```
 
 ## Rationale
