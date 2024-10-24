@@ -66,7 +66,7 @@ key features:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6
+  - uses: ikalnytskyi/action-setup-postgres@v7
 
   - run: psql postgresql://postgres:postgres@localhost:5432/postgres -c "SELECT 1"
   - run: psql service=postgres -c "SELECT 1"
@@ -79,7 +79,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6
+  - uses: ikalnytskyi/action-setup-postgres@v7
     id: postgres
 
   - run: psql ${{ steps.postgres.outputs.connection-uri }} -c "SELECT 1"
@@ -93,7 +93,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6
+  - uses: ikalnytskyi/action-setup-postgres@v7
     with:
       username: ci
       password: sw0rdfish
@@ -116,7 +116,7 @@ steps:
 
 ```yaml
 steps:
-  - uses: ikalnytskyi/action-setup-postgres@v6
+  - uses: ikalnytskyi/action-setup-postgres@v7
     id: postgres
 
   - env:
