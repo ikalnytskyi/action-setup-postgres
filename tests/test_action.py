@@ -21,17 +21,6 @@ def is_windows() -> bool:
 
 
 @pytest.fixture(scope="function")
-def is_windows_server_2019(is_windows: bool) -> bool:
-    """Returns True if running on Windows Server 2019."""
-
-    if not is_windows:
-        return False
-
-    windows_caption = subprocess.check_output(["wmic", "os", "get", "Caption"], text=True)
-    return "Windows Server 2019" in windows_caption
-
-
-@pytest.fixture(scope="function")
 def connection_uri() -> str:
     """Read and return connection URI from environment."""
 
@@ -108,27 +97,24 @@ def test_server_encoding(connection: psycopg.Connection):
     assert connection.execute("SHOW SERVER_ENCODING").fetchone()[0] == "UTF8"
 
 
-def test_locale(connection: psycopg.Connection, is_windows_server_2019: bool):
-    """Test that PostgreSQL's locale matches the one we paased to initdb."""
+def test_locale(connection: psycopg.Connection):
+    """Test that PostgreSQL's locale matches the one we passed to initdb."""
 
-    locale_exp = "en_US.UTF-8"
-
-    if is_windows_server_2019:
-        locale_exp = "en-US"
+    locale_expected = "en_US.UTF-8"
 
     record = connection \
         .execute("SELECT datcollate, datctype FROM pg_database WHERE datname = 'template0'") \
         .fetchone()
     assert record
-    assert locale.normalize(record[0]) == locale_exp
-    assert locale.normalize(record[1]) == locale_exp
+    assert locale.normalize(record[0]) == locale_expected
+    assert locale.normalize(record[1]) == locale_expected
 
     record = connection \
         .execute("SELECT datcollate, datctype FROM pg_database WHERE datname = 'template1'") \
         .fetchone()
     assert record
-    assert locale.normalize(record[0]) == locale_exp
-    assert locale.normalize(record[1]) == locale_exp
+    assert locale.normalize(record[0]) == locale_expected
+    assert locale.normalize(record[1]) == locale_expected
 
 
 def test_environment_variables(is_windows: bool):

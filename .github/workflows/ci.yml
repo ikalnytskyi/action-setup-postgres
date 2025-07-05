@@ -18,14 +18,13 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-20.04
           - ubuntu-22.04
           - ubuntu-24.04
           - macos-13
           - macos-14
           - macos-15
-          - windows-2019
           - windows-2022
+          - windows-2025
     steps:
       - uses: actions/checkout@v4
 
@@ -56,14 +55,13 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-20.04
           - ubuntu-22.04
           - ubuntu-24.04
           - macos-13
           - macos-14
           - macos-15
-          - windows-2019
           - windows-2022
+          - windows-2025
         postgres-version:
           - "14"
           - "15"
