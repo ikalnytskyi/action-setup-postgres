@@ -111,15 +111,6 @@ runs:
         DEFAULT_ENCODING="UTF-8"
         DEFAULT_LOCALE="en_US.$DEFAULT_ENCODING"
 
-        # Unfortunately, Windows Server 2019 doesn't understand locale
-        # specified in the format defined by the POSIX standard, i.e.
-        # <language>_<country>.<encoding>. Therefore, we have to convert it
-        # into something it can swallow, i.e. <language>-<country>.
-        if [[ "$RUNNER_OS" == "Windows" && "$(wmic os get Caption)" == *"2019"* ]]; then
-          DEFAULT_LOCALE="${DEFAULT_LOCALE%%.*}"
-          DEFAULT_LOCALE="${DEFAULT_LOCALE//_/-}"
-        fi
-
         # Unfortunately 'initdb' could only receive a password via file on disk
         # or prompt to enter on. Prompting is not an option since we're running
         # in non-interactive mode.
