@@ -18,13 +18,23 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-22.04
+          # Linux
           - ubuntu-24.04
+          - ubuntu-22.04
+          # Linux - ARM
+          - ubuntu-24.04-arm
+          - ubuntu-22.04-arm
+          # Legacy
           - macos-13
+          # M1 CPU
           - macos-14
           - macos-15
-          - windows-2022
+          - macos-26
+          # Windows
           - windows-2025
+          - windows-2022
+          # Windows ARM
+          - windows-11-arm
     steps:
       - uses: actions/checkout@v4
 
@@ -55,13 +65,23 @@ jobs:
     strategy:
       matrix:
         os:
-          - ubuntu-22.04
+          # Linux
           - ubuntu-24.04
+          - ubuntu-22.04
+          # Linux - ARM
+          - ubuntu-24.04-arm
+          - ubuntu-22.04-arm
+          # Legacy
           - macos-13
+          # M1 CPU
           - macos-14
           - macos-15
-          - windows-2022
+          - macos-26
+          # Windows
           - windows-2025
+          - windows-2022
+          # Windows ARM
+          - windows-11-arm
         postgres-version:
           - "14"
           - "15"
