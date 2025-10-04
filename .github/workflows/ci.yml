@@ -19,10 +19,13 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
+          - ubuntu-22.04-arm
           - ubuntu-24.04
+          - ubuntu-24.04-arm
           - macos-13
           - macos-14
           - macos-15
+          - windows-11-arm
           - windows-2022
           - windows-2025
     steps:
@@ -35,7 +38,11 @@ jobs:
       - name: Run setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.13"
+          # PostgreSQL has no native ARM64 build for Windows, so the x64
+          # version is installed instead. This means CPython for x64 must be
+          # used, so psycopg can properly link to PostgreSQL's libpq.
+          architecture: ${{ matrix.os == 'windows-11-arm' && 'x64' || '' }}
 
       - name: Run tests
         run: |
@@ -56,10 +63,13 @@ jobs:
       matrix:
         os:
           - ubuntu-22.04
+          - ubuntu-22.04-arm
           - ubuntu-24.04
+          - ubuntu-24.04-arm
           - macos-13
           - macos-14
           - macos-15
+          - windows-11-arm
           - windows-2022
           - windows-2025
         postgres-version:
@@ -83,7 +93,11 @@ jobs:
       - name: Run setup-python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.13"
+          # PostgreSQL has no native ARM64 build for Windows, so the x64
+          # version is installed instead. This means CPython for x64 must be
+          # used, so psycopg can properly link to PostgreSQL's libpq.
+          architecture: ${{ matrix.os == 'windows-11-arm' && 'x64' || '' }}
 
       - name: Run tests
         run: |

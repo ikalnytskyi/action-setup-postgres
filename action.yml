@@ -57,6 +57,10 @@ runs:
           sudo apt-get update
           sudo apt-get -y install postgresql-${{ inputs.postgres-version }}
 
+          # The PostgreSQL 17 package for ARM64 automatically starts the
+          # PostgreSQL service, occupying the default PostgreSQL port.
+          sudo systemctl stop postgresql.service
+
           PG_BINDIR=$("/usr/lib/postgresql/${{ inputs.postgres-version }}/bin/pg_config" --bindir)
           echo "$PG_BINDIR" >> $GITHUB_PATH
 
