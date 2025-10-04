@@ -7,12 +7,13 @@
 This action sets up a PostgreSQL server for the rest of the job. Here are some
 key features:
 
-* Runs on Linux, macOS and Windows action runners.
+* Runs on Linux, macOS and Windows action runners, including [partner][0] runners.
 * PostgreSQL version can be parametrized.
 * Adds PostgreSQL [client applications][1] to `PATH`.
 * Supports SSL on-demand.
 * Easy [to verify][2] that it DOES NOT contain malicious code.
 
+[0]: https://github.com/actions/partner-runner-images/
 [1]: https://www.postgresql.org/docs/current/reference-client.html
 [2]: action.yml
 
