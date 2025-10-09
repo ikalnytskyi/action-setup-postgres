@@ -30,14 +30,14 @@ jobs:
           - windows-2022
           - windows-2025
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Run setup-postgres
         uses: ./
         id: postgres
 
       - name: Run setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           # PostgreSQL has no native ARM64 build for Windows, so the x64
@@ -80,7 +80,7 @@ jobs:
           - "16"
           - "17"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Run setup-postgres
         uses: ./
@@ -94,7 +94,7 @@ jobs:
         id: postgres
 
       - name: Run setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
           # PostgreSQL has no native ARM64 build for Windows, so the x64
