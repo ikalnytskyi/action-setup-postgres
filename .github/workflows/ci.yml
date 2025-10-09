@@ -2,15 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   schedule:
     - cron: "0 0 * * Fri"
 
 defaults:
   run:
     shell: bash
+
+permissions: {}
 
 jobs:
   default:
@@ -31,6 +33,8 @@ jobs:
           - windows-2025
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Run setup-postgres
         uses: ./
@@ -81,6 +85,8 @@ jobs:
           - "17"
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Run setup-postgres
         uses: ./
@@ -114,3 +120,17 @@ jobs:
           EXPECTED_SERVICE_NAME: yoda
           EXPECTED_SERVER_VERSION: ${{ matrix.postgres-version }}
           EXPECTED_SSL: true
+
+  zizmor:
+    runs-on: ubuntu-latest
+
+    permissions:
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@e673c3917a1aef3c65c972347ed84ccd013ecda4
