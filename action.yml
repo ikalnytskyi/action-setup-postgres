@@ -43,7 +43,7 @@ runs:
   steps:
     - name: Install PostgreSQL
       run: |
-        if [[ ! "${{ inputs.postgres-version }}" =~ ^(14|15|16|17|18)$ ]]; then
+        if [[ ! "$INPUT_POSTGRES_VERSION" =~ ^(14|15|16|17|18)$ ]]; then
           echo "::error::postgres-version must be one of: 14, 15, 16, 17, 18."
           exit 1
         fi
@@ -55,13 +55,13 @@ runs:
           echo "$APT_ENTRY" | sudo tee /etc/apt/sources.list.d/pgdg.list
           wget --quiet -O - "$APT_KEY" | sudo apt-key add -
           sudo apt-get update
-          sudo apt-get -y install postgresql-${{ inputs.postgres-version }}
+          sudo apt-get -y install postgresql-$INPUT_POSTGRES_VERSION
 
           # The PostgreSQL 17 package for ARM64 automatically starts the
           # PostgreSQL service, occupying the default PostgreSQL port.
           sudo systemctl stop postgresql.service
 
-          PG_BINDIR=$("/usr/lib/postgresql/${{ inputs.postgres-version }}/bin/pg_config" --bindir)
+          PG_BINDIR=$("/usr/lib/postgresql/$INPUT_POSTGRES_VERSION/bin/pg_config" --bindir)
           echo "$PG_BINDIR" >> $GITHUB_PATH
 
         elif [ "$RUNNER_OS" == "Windows" ]; then
@@ -74,13 +74,13 @@ runs:
             echo "$name=" >> $GITHUB_ENV
           done
 
-          choco install postgresql${{ inputs.postgres-version }} \
-            --params "/Password:${{ inputs.password }}" \
+          choco install postgresql$INPUT_POSTGRES_VERSION \
+            --params "/Password:$INPUT_PASSWORD" \
             --ia "--enable-components server,commandlinetools --extract-only 1" \
             --no-progress
 
-          PG_BINDIR=$("$PROGRAMFILES/PostgreSQL/${{ inputs.postgres-version }}/bin/pg_config.exe" --bindir)
-          PG_LIBDIR=$("$PROGRAMFILES/PostgreSQL/${{ inputs.postgres-version }}/bin/pg_config.exe" --libdir)
+          PG_BINDIR=$("$PROGRAMFILES/PostgreSQL/$INPUT_POSTGRES_VERSION/bin/pg_config.exe" --bindir)
+          PG_LIBDIR=$("$PROGRAMFILES/PostgreSQL/$INPUT_POSTGRES_VERSION/bin/pg_config.exe" --libdir)
 
           echo "$PG_BINDIR" >> $GITHUB_PATH
           echo "PQ_LIB_DIR=$PG_LIBDIR" >> $GITHUB_ENV
@@ -94,7 +94,7 @@ runs:
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
           export HOMEBREW_NO_INSTALL_CLEANUP=1
           export HOMEBREW_NO_INSTALL_UPGRADE=1
-          brew install --quiet postgresql@${{ inputs.postgres-version }}
+          brew install --quiet postgresql@$INPUT_POSTGRES_VERSION
 
           # Link PostgreSQL binaries from /usr/local/bin in order to make them
           # available globally. The --overwrite option is required since some
@@ -102,9 +102,12 @@ runs:
           # have to link the required version of PostgreSQL. The unlinking step
           # is needed to suppress "Already linked" warning which is propagated
           # back to users.
-          brew unlink --quiet postgresql@${{ inputs.postgres-version }}
-          brew link --quiet --overwrite postgresql@${{ inputs.postgres-version }}
+          brew unlink --quiet postgresql@$INPUT_POSTGRES_VERSION
+          brew link --quiet --overwrite postgresql@$INPUT_POSTGRES_VERSION
         fi
+      env:
+        INPUT_PASSWORD: ${{ inputs.password }}
+        INPUT_POSTGRES_VERSION: ${{ inputs.postgres-version }}
       shell: bash
 
     - name: Setup and start PostgreSQL
@@ -118,7 +121,7 @@ runs:
         # Unfortunately 'initdb' could only receive a password via file on disk
         # or prompt to enter on. Prompting is not an option since we're running
         # in non-interactive mode.
-        echo '${{ inputs.password }}' > $PWFILE
+        echo "$INPUT_PASSWORD" > $PWFILE
 
         # There are couple of reasons why we need to create a new PostgreSQL
         # database cluster. First and foremost, we have to create a superuser
@@ -131,7 +134,7 @@ runs:
         # [1] https://www.postgresql.org/docs/15/reference-client.html
         initdb \
           --pgdata="$PGDATA" \
-          --username="${{ inputs.username }}" \
+          --username="$INPUT_USERNAME" \
           --pwfile="$PWFILE" \
           --auth="scram-sha-256" \
           --encoding="$DEFAULT_ENCODING" \
@@ -141,9 +144,9 @@ runs:
         # Do not create unix sockets since they are created by default in the
         # directory we have no permissions to (owned by system postgres user).
         echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
-        echo "port = ${{ inputs.port }}" >> "$PGDATA/postgresql.conf"
+        echo "port = $INPUT_PORT" >> "$PGDATA/postgresql.conf"
 
-        if [ "${{ inputs.ssl }}" = "true" ]; then
+        if [ "$INPUT_SSL" = "true" ]; then
           # On Windows, bash runs on top of MSYS2, which automatically converts
           # Unix paths to Windows paths for every argument that appears to be a
           # path. This behavior breaks the openssl invocation because the
@@ -173,21 +176,27 @@ runs:
         # parametrized via action input parameters.
         #
         # [1] https://www.postgresql.org/docs/15/libpq-pgservice.html
-        cat <<EOF > "$PGDATA/pg_service.conf"
-        [${{ inputs.username }}]
+        cat <<-EOF > "$PGDATA/pg_service.conf"
+        [$INPUT_USERNAME]
         host=localhost
-        port=${{ inputs.port }}
-        user=${{ inputs.username }}
-        password=${{ inputs.password }}
-        dbname=${{ inputs.database }}
+        port=$INPUT_PORT
+        user=$INPUT_USERNAME
+        password=$INPUT_PASSWORD
+        dbname=$INPUT_DATABASE
         EOF
 
-        if [ "${{ inputs.ssl }}" = "true" ]; then
+        if [ "$INPUT_SSL" = "true" ]; then
           echo "sslmode=verify-ca" >> "$PGDATA/pg_service.conf"
           echo "sslrootcert=$PGDATA/server.crt" >> "$PGDATA/pg_service.conf"
         fi
 
         echo "PGSERVICEFILE=$PGDATA/pg_service.conf" >> $GITHUB_ENV
+      env:
+        INPUT_PORT: ${{ inputs.port }}
+        INPUT_USERNAME: ${{ inputs.username }}
+        INPUT_PASSWORD: ${{ inputs.password }}
+        INPUT_DATABASE: ${{ inputs.database }}
+        INPUT_SSL: ${{ inputs.ssl }}
       shell: bash
 
     - name: Setup PostgreSQL database
@@ -196,19 +205,21 @@ runs:
         # users, utilities and third party applications. There's no way to
         # parametrize the name, so all we can do is to avoid creating a
         # database if provided name is 'postgres'.
-        if [ "${{ inputs.database }}" != "postgres" ]; then
-          createdb -O "${{ inputs.username }}" "${{ inputs.database }}"
+        if [ "$INPUT_DATABASE" != "postgres" ]; then
+          createdb -O "$INPUT_USERNAME" "$INPUT_DATABASE"
         fi
       env:
+        INPUT_USERNAME: ${{ inputs.username }}
+        INPUT_DATABASE: ${{ inputs.database }}
         PGSERVICE: ${{ inputs.username }}
       shell: bash
 
     - name: Set action outputs
       run: |
-        CONNECTION_URI="postgresql://${{ inputs.username }}:${{ inputs.password }}@localhost:${{ inputs.port }}/${{ inputs.database }}"
+        CONNECTION_URI="postgresql://$INPUT_USERNAME:$INPUT_PASSWORD@localhost:$INPUT_PORT/$INPUT_DATABASE"
         CERTIFICATE_PATH="$RUNNER_TEMP/pgdata/server.crt"
 
-        if [ "${{ inputs.ssl }}" = "true" ]; then
+        if [ "$INPUT_SSL" = "true" ]; then
           # Although SSLMODE and SSLROOTCERT are specific to libpq options,
           # most third-party drivers also support them. By default libpq
           # prefers SSL but doesn't require it, thus it's important to set
@@ -219,6 +230,12 @@ runs:
         fi
 
         echo "connection-uri=$CONNECTION_URI" >> $GITHUB_OUTPUT
-        echo "service-name=${{ inputs.username }}" >> $GITHUB_OUTPUT
+        echo "service-name=$INPUT_USERNAME" >> $GITHUB_OUTPUT
+      env:
+        INPUT_PORT: ${{ inputs.port }}
+        INPUT_USERNAME: ${{ inputs.username }}
+        INPUT_PASSWORD: ${{ inputs.password }}
+        INPUT_DATABASE: ${{ inputs.database }}
+        INPUT_SSL: ${{ inputs.ssl }}
       shell: bash
       id: set-outputs
