@@ -118,6 +118,14 @@ runs:
         DEFAULT_ENCODING="UTF-8"
         DEFAULT_LOCALE="en_US.$DEFAULT_ENCODING"
 
+        # Some runners (e.g., `ubuntu-slim`) may not include the `en_US.UTF-8`
+        # locale by default. Ensure the required locale exists by generating it
+        # if missing.
+        if ! python -c "from locale import *; setlocale(LC_ALL, '$DEFAULT_LOCALE')" \
+             >/dev/null 2>&1; then
+          sudo locale-gen "$DEFAULT_LOCALE"
+        fi
+
         # Unfortunately 'initdb' could only receive a password via file on disk
         # or prompt to enter on. Prompting is not an option since we're running
         # in non-interactive mode.
