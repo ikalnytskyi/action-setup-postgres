@@ -74,10 +74,26 @@ runs:
             echo "$name=" >> $GITHUB_ENV
           done
 
-          choco install postgresql$INPUT_POSTGRES_VERSION \
-            --params "/Password:$INPUT_PASSWORD" \
-            --ia "--enable-components server,commandlinetools --extract-only 1" \
-            --no-progress
+          # Chocolatey downloads the PostgreSQL installer from
+          # get.enterprisedb.com, which intermittently responds with HTTP 403
+          # and aborts the install. Retry a few times to absorb such transient
+          # download failures.
+          for attempt in 1 2 3; do
+            if choco install postgresql$INPUT_POSTGRES_VERSION \
+              --params "/Password:$INPUT_PASSWORD" \
+              --ia "--enable-components server,commandlinetools --extract-only 1" \
+              --no-progress; then
+              break
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Failed to install PostgreSQL after $attempt attempts."
+              exit 1
+            fi
+
+            echo "::warning::choco install failed (attempt $attempt), retrying in 15s..."
+            sleep 15
+          done
 
           PG_BINDIR=$("$PROGRAMFILES/PostgreSQL/$INPUT_POSTGRES_VERSION/bin/pg_config.exe" --bindir)
           PG_LIBDIR=$("$PROGRAMFILES/PostgreSQL/$INPUT_POSTGRES_VERSION/bin/pg_config.exe" --libdir)
