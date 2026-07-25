@@ -61,7 +61,7 @@ def connection(
     if request.param == "uri":
         return connection_factory(connection_uri)
     elif request.param == "kv-string":
-        return connection_factory(f"service={service_name}")
+        return connection_factory(psycopg.conninfo.make_conninfo(service=service_name))
     raise RuntimeError("f{request.param}: unknown value")
 
 
