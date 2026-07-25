@@ -54,12 +54,16 @@ runs:
 
           echo "$APT_ENTRY" | sudo tee /etc/apt/sources.list.d/pgdg.list
           wget --quiet -O - "$APT_KEY" | sudo apt-key add -
+
+          # The PostgreSQL package creates and starts a default "main" cluster
+          # during installation. Disable it because we initialize and start
+          # PostgreSQL ourselves in the next step.
+          sudo mkdir -p /etc/postgresql-common/createcluster.d
+          echo "create_main_cluster = false" | sudo tee \
+            /etc/postgresql-common/createcluster.d/50-action-setup-postgres.conf
+
           sudo apt-get update
           sudo apt-get -y install postgresql-$INPUT_POSTGRES_VERSION
-
-          # The PostgreSQL 17 package for ARM64 automatically starts the
-          # PostgreSQL service, occupying the default PostgreSQL port.
-          sudo systemctl stop postgresql.service
 
           PG_BINDIR=$("/usr/lib/postgresql/$INPUT_POSTGRES_VERSION/bin/pg_config" --bindir)
           echo "$PG_BINDIR" >> $GITHUB_PATH
