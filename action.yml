@@ -49,11 +49,11 @@ runs:
         fi
 
         if [ "$RUNNER_OS" == "Linux" ]; then
-          APT_ENTRY="deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main"
-          APT_KEY="https://www.postgresql.org/media/keys/ACCC4CF8.asc"
+          APT_KEY="/etc/apt/keyrings/postgresql.asc"
+          APT_ENTRY="deb [signed-by=$APT_KEY] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main"
 
+          sudo wget --quiet -O "$APT_KEY" https://www.postgresql.org/media/keys/ACCC4CF8.asc
           echo "$APT_ENTRY" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          wget --quiet -O - "$APT_KEY" | sudo apt-key add -
 
           # The PostgreSQL package creates and starts a default "main" cluster
           # during installation. Disable it because we initialize and start
