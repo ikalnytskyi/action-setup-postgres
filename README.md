@@ -21,9 +21,9 @@ key features:
 
 | Key              | Value                                                                                    | Default     |
 |------------------|------------------------------------------------------------------------------------------|-------------|
-| username         | The username of the user to setup.                                                       | `postgres`  |
-| password         | The password of the user to setup.                                                       | `postgres`  |
-| database         | The database name to setup and grant permissions to created user.                        | `postgres`  |
+| username         | The username of the user to set up.                                                      | `postgres`  |
+| password         | The password of the user to set up.                                                      | `postgres`  |
+| database         | The database name to set up and grant permissions to the created user.                   | `postgres`  |
 | port             | The server port to listen on.                                                            | `5432`      |
 | postgres-version | The PostgreSQL major version to install. Supported values: "14", "15", "16", "17", "18". | `18`        |
 
