@@ -1,20 +1,20 @@
 name: Setup PostgreSQL for Linux/macOS/Windows
 author: Ihor Kalnytskyi
-description: Setup a preinstalled PostgreSQL server.
+description: Install and set up a PostgreSQL server.
 branding:
   icon: database
   color: purple
 inputs:
   username:
-    description: The username of the user to setup.
+    description: The username of the user to set up.
     default: postgres
     required: false
   password:
-    description: The password of the user to setup.
+    description: The password of the user to set up.
     default: postgres
     required: false
   database:
-    description: The database name to setup and grant permissions to created user.
+    description: The database name to set up and grant permissions to the created user.
     default: postgres
     required: false
   port:
@@ -24,6 +24,7 @@ inputs:
   postgres-version:
     description: The PostgreSQL major version to install. Either "14", "15", "16", "17" or "18".
     default: "18"
+    required: false
   ssl:
     description: When "true", encrypt connections using SSL (TLS).
     default: "false"
@@ -48,7 +49,8 @@ runs:
           exit 1
         fi
 
-        if [ "$RUNNER_OS" == "Linux" ]; then
+        case "$RUNNER_OS" in
+        Linux)
           APT_KEY="/etc/apt/keyrings/postgresql.asc"
           APT_ENTRY="deb [signed-by=$APT_KEY] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main"
 
@@ -67,8 +69,9 @@ runs:
 
           PG_BINDIR=$("/usr/lib/postgresql/$INPUT_POSTGRES_VERSION/bin/pg_config" --bindir)
           echo "$PG_BINDIR" >> $GITHUB_PATH
+          ;;
 
-        elif [ "$RUNNER_OS" == "Windows" ]; then
+        Windows)
           # The Windows runner has some PostgreSQL environment variables set
           # that may confuse users since they may be irrelevant to the
           # PostgreSQL server we're using. Since GitHub actions does not
@@ -104,8 +107,9 @@ runs:
 
           echo "$PG_BINDIR" >> $GITHUB_PATH
           echo "PQ_LIB_DIR=$PG_LIBDIR" >> $GITHUB_ENV
+          ;;
 
-        elif [ "$RUNNER_OS" == "macOS" ]; then
+        macOS)
           # HOMEBREW_GITHUB_ACTIONS is used to skip 'initdb' execution to save
           # some seconds. That invocation is not needed because of initdb
           # invocation below.
@@ -124,7 +128,8 @@ runs:
           # back to users.
           brew unlink --quiet postgresql@$INPUT_POSTGRES_VERSION
           brew link --quiet --overwrite postgresql@$INPUT_POSTGRES_VERSION
-        fi
+          ;;
+        esac
       env:
         INPUT_PASSWORD: ${{ inputs.password }}
         INPUT_POSTGRES_VERSION: ${{ inputs.postgres-version }}
@@ -149,7 +154,7 @@ runs:
         # Unfortunately 'initdb' could only receive a password via file on disk
         # or prompt to enter on. Prompting is not an option since we're running
         # in non-interactive mode.
-        echo "$INPUT_PASSWORD" > $PWFILE
+        printf '%s' "$INPUT_PASSWORD" > $PWFILE
 
         # There are couple of reasons why we need to create a new PostgreSQL
         # database cluster. First and foremost, we have to create a superuser
@@ -159,7 +164,7 @@ runs:
         # settings are the same between operating systems and aren't changed by
         # package vendors.
         #
-        # [1] https://www.postgresql.org/docs/15/reference-client.html
+        # [1] https://www.postgresql.org/docs/current/reference-client.html
         initdb \
           --pgdata="$PGDATA" \
           --username="$INPUT_USERNAME" \
@@ -203,7 +208,7 @@ runs:
         # PORT, USER, PASSWORD and DBNAME are required because they could be
         # parametrized via action input parameters.
         #
-        # [1] https://www.postgresql.org/docs/15/libpq-pgservice.html
+        # [1] https://www.postgresql.org/docs/current/libpq-pgservice.html
         cat <<-EOF > "$PGDATA/pg_service.conf"
         [$INPUT_USERNAME]
         host=localhost
