@@ -93,9 +93,9 @@ jobs:
       - name: Run setup-postgres
         uses: ./
         with:
-          username: yoda
-          password: GrandMaster
-          database: jedi_order
+          username: user:@/ n#m+e
+          password: p@ss:/ word?#
+          database: d@ta /#bas?:e
           port: 34837
           postgres-version: ${{ matrix.postgres-version }}
           ssl: true
@@ -118,8 +118,8 @@ jobs:
           CONNECTION_URI: ${{ steps.postgres.outputs.connection-uri }}
           SERVICE_NAME: ${{ steps.postgres.outputs.service-name }}
           CERTIFICATE_PATH: ${{ steps.postgres.outputs.certificate-path }}
-          EXPECTED_CONNECTION_URI: postgresql://yoda:GrandMaster@localhost:34837/jedi_order?sslmode=verify-ca&sslrootcert=${{ steps.postgres.outputs.certificate-path }}
-          EXPECTED_SERVICE_NAME: yoda
+          EXPECTED_CONNECTION_URI: "postgresql://user%3A%40%2F%20n%23m%2Be:p%40ss%3A%2F%20word%3F%23@localhost:34837/d%40ta%20%2F%23bas%3F%3Ae?sslmode=verify-ca&sslrootcert=${{ steps.postgres.outputs.certificate-path }}"
+          EXPECTED_SERVICE_NAME: "user:@/ n#m+e"
           EXPECTED_SERVER_VERSION: ${{ matrix.postgres-version }}
           EXPECTED_SSL: true
 

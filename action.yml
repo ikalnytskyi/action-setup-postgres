@@ -87,7 +87,6 @@ runs:
           # download failures.
           for attempt in 1 2 3; do
             if choco install postgresql$INPUT_POSTGRES_VERSION \
-              --params "/Password:$INPUT_PASSWORD" \
               --ia "--enable-components server,commandlinetools --extract-only 1" \
               --no-progress; then
               break
@@ -249,7 +248,10 @@ runs:
 
     - name: Set action outputs
       run: |
-        CONNECTION_URI="postgresql://$INPUT_USERNAME:$INPUT_PASSWORD@localhost:$INPUT_PORT/$INPUT_DATABASE"
+        USERNAME_ENCODED=$(jq -rn --arg s "$INPUT_USERNAME" '$s|@uri')
+        PASSWORD_ENCODED=$(jq -rn --arg s "$INPUT_PASSWORD" '$s|@uri')
+        DATABASE_ENCODED=$(jq -rn --arg s "$INPUT_DATABASE" '$s|@uri')
+        CONNECTION_URI="postgresql://$USERNAME_ENCODED:$PASSWORD_ENCODED@localhost:$INPUT_PORT/$DATABASE_ENCODED"
         CERTIFICATE_PATH="$RUNNER_TEMP/pgdata/server.crt"
 
         if [ "$INPUT_SSL" = "true" ]; then
