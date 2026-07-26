@@ -46,12 +46,30 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Get current week number
+      id: week
+      run: |
+        echo "value=$(date -u +%Y-%W)" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Cache PostgreSQL packages
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        path: |
+          ${{ runner.temp }}/packages/postgresql*.deb
+          ${{ runner.temp }}/packages/libpq*.deb
+          ${{ runner.temp }}/packages/postgresql-*.zip
+          ~/Library/Caches/Homebrew/downloads/*--postgresql@*
+        key: postgresql-${{ runner.os }}-${{ runner.arch }}-${{ inputs.postgres-version }}-${{ steps.week.outputs.value }}
+
     - name: Install PostgreSQL
       run: |
         if [[ ! "$INPUT_POSTGRES_VERSION" =~ ^(15|16|17|18)$ ]]; then
           echo "::error::postgres-version must be one of: 15, 16, 17, 18."
           exit 1
         fi
+
+        mkdir -p "$RUNNER_TEMP/packages"
 
         case "$RUNNER_OS" in
         Linux)
@@ -69,7 +87,9 @@ runs:
             /etc/postgresql-common/createcluster.d/50-action-setup-postgres.conf
 
           sudo apt-get update
-          sudo apt-get -y install postgresql-$INPUT_POSTGRES_VERSION
+          sudo apt-get \
+            -o "Dir::Cache::archives=$RUNNER_TEMP/packages" \
+            -y install postgresql-$INPUT_POSTGRES_VERSION
 
           PG_BINDIR=$("/usr/lib/postgresql/$INPUT_POSTGRES_VERSION/bin/pg_config" --bindir)
           echo "$PG_BINDIR" >> $GITHUB_PATH
@@ -85,28 +105,20 @@ runs:
             echo "$name=" >> $GITHUB_ENV
           done
 
-          # Chocolatey downloads the PostgreSQL installer from
-          # get.enterprisedb.com, which intermittently responds with HTTP 403
-          # and aborts the install. Retry a few times to absorb such transient
-          # download failures.
-          for attempt in 1 2 3; do
-            if choco install postgresql$INPUT_POSTGRES_VERSION \
-              --ia "--enable-components server,commandlinetools --extract-only 1" \
-              --no-progress; then
-              break
-            fi
+          POSTGRES_VERSION=$(choco search postgresql$INPUT_POSTGRES_VERSION \
+            --exact --limit-output | cut -d "|" -f 2 | cut -d "." -f 1,2)
+          POSTGRES_ARCHIVE="$RUNNER_TEMP/packages/postgresql-$POSTGRES_VERSION-1-windows-x64-binaries.zip"
+          POSTGRES_DIR="$RUNNER_TEMP/postgresql"
 
-            if [ "$attempt" -eq 3 ]; then
-              echo "::error::Failed to install PostgreSQL after $attempt attempts."
-              exit 1
-            fi
+          if [ ! -f "$POSTGRES_ARCHIVE" ]; then
+            curl --fail --location --retry 3 --retry-all-errors \
+              --output "$POSTGRES_ARCHIVE" \
+              "https://get.enterprisedb.com/postgresql/$(basename "$POSTGRES_ARCHIVE")"
+          fi
+          unzip -q "$POSTGRES_ARCHIVE" -d "$POSTGRES_DIR"
 
-            echo "::warning::choco install failed (attempt $attempt), retrying in 15s..."
-            sleep 15
-          done
-
-          PG_BINDIR=$("$PROGRAMFILES/PostgreSQL/$INPUT_POSTGRES_VERSION/bin/pg_config.exe" --bindir)
-          PG_LIBDIR=$("$PROGRAMFILES/PostgreSQL/$INPUT_POSTGRES_VERSION/bin/pg_config.exe" --libdir)
+          PG_BINDIR="$POSTGRES_DIR/pgsql/bin"
+          PG_LIBDIR="$POSTGRES_DIR/pgsql/lib"
 
           echo "$PG_BINDIR" >> $GITHUB_PATH
           echo "PQ_LIB_DIR=$PG_LIBDIR" >> $GITHUB_ENV
