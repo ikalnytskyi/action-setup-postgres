@@ -21,6 +21,10 @@ inputs:
     description: The server port to listen on.
     default: "5432"
     required: false
+  max-connections:
+    description: The maximum number of concurrent connections to the server.
+    default: "100"
+    required: false
   postgres-version:
     description: The PostgreSQL major version to install. Either "14", "15", "16", "17" or "18".
     default: "18"
@@ -177,6 +181,7 @@ runs:
         # directory we have no permissions to (owned by system postgres user).
         echo "unix_socket_directories = ''" >> "$PGDATA/postgresql.conf"
         echo "port = $INPUT_PORT" >> "$PGDATA/postgresql.conf"
+        echo "max_connections = $INPUT_MAX_CONNECTIONS" >> "$PGDATA/postgresql.conf"
 
         if [ "$INPUT_SSL" = "true" ]; then
           # On Windows, bash runs on top of MSYS2, which automatically converts
@@ -225,6 +230,7 @@ runs:
         echo "PGSERVICEFILE=$PGDATA/pg_service.conf" >> $GITHUB_ENV
       env:
         INPUT_PORT: ${{ inputs.port }}
+        INPUT_MAX_CONNECTIONS: ${{ inputs.max-connections }}
         INPUT_USERNAME: ${{ inputs.username }}
         INPUT_PASSWORD: ${{ inputs.password }}
         INPUT_DATABASE: ${{ inputs.database }}

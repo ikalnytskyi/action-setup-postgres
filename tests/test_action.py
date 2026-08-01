@@ -148,6 +148,13 @@ def test_server_version(connection: psycopg.Connection):
     assert server_version.split(".")[0] == os.getenv("EXPECTED_SERVER_VERSION")
 
 
+def test_server_max_connections(connection: psycopg.Connection):
+    """Test that PostgreSQL's connection limit is expected."""
+
+    max_connections = connection.execute("SHOW MAX_CONNECTIONS").fetchone()[0]
+    assert max_connections == os.getenv("EXPECTED_MAX_CONNECTIONS")
+
+
 def test_server_ssl(connection: psycopg.Connection):
     """Test that connection is SSL encrypted."""
 
