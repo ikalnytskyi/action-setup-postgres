@@ -26,7 +26,7 @@ inputs:
     default: "100"
     required: false
   postgres-version:
-    description: The PostgreSQL major version to install. Either "14", "15", "16", "17" or "18".
+    description: The PostgreSQL major version to install. Either "15", "16", "17" or "18".
     default: "18"
     required: false
   ssl:
@@ -48,8 +48,8 @@ runs:
   steps:
     - name: Install PostgreSQL
       run: |
-        if [[ ! "$INPUT_POSTGRES_VERSION" =~ ^(14|15|16|17|18)$ ]]; then
-          echo "::error::postgres-version must be one of: 14, 15, 16, 17, 18."
+        if [[ ! "$INPUT_POSTGRES_VERSION" =~ ^(15|16|17|18)$ ]]; then
+          echo "::error::postgres-version must be one of: 15, 16, 17, 18."
           exit 1
         fi
 
