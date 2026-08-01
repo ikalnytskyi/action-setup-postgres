@@ -61,6 +61,7 @@ jobs:
           EXPECTED_CONNECTION_URI: postgresql://postgres:postgres@localhost:5432/postgres
           EXPECTED_SERVICE_NAME: postgres
           EXPECTED_SERVER_VERSION: "18"
+          EXPECTED_MAX_CONNECTIONS: "100"
           EXPECTED_SSL: false
 
   parametrized:
@@ -97,6 +98,7 @@ jobs:
           password: p@ss:/ word?#
           database: d@ta /#bas?:e
           port: 34837
+          max-connections: 200
           postgres-version: ${{ matrix.postgres-version }}
           ssl: true
         id: postgres
@@ -121,6 +123,7 @@ jobs:
           EXPECTED_CONNECTION_URI: "postgresql://user%3A%40%2F%20n%23m%2Be:p%40ss%3A%2F%20word%3F%23@localhost:34837/d%40ta%20%2F%23bas%3F%3Ae?sslmode=verify-ca&sslrootcert=${{ steps.postgres.outputs.certificate-path }}"
           EXPECTED_SERVICE_NAME: "user:@/ n#m+e"
           EXPECTED_SERVER_VERSION: ${{ matrix.postgres-version }}
+          EXPECTED_MAX_CONNECTIONS: "200"
           EXPECTED_SSL: true
 
   zizmor:
