@@ -140,8 +140,9 @@ runs:
 
     - name: Setup and start PostgreSQL
       run: |
-        PGDATA="$RUNNER_TEMP/pgdata"
-        PWFILE="$RUNNER_TEMP/pwfile"
+        PGDATA="$RUNNER_TEMP/action-setup-postgres/$GITHUB_ACTION/pgdata"
+        PWFILE="$RUNNER_TEMP/action-setup-postgres/$GITHUB_ACTION/pwfile"
+        mkdir -p "$RUNNER_TEMP/action-setup-postgres/$GITHUB_ACTION"
 
         DEFAULT_ENCODING="UTF-8"
         DEFAULT_LOCALE="en_US.$DEFAULT_ENCODING"
@@ -258,7 +259,7 @@ runs:
         PASSWORD_ENCODED=$(jq -rn --arg s "$INPUT_PASSWORD" '$s|@uri')
         DATABASE_ENCODED=$(jq -rn --arg s "$INPUT_DATABASE" '$s|@uri')
         CONNECTION_URI="postgresql://$USERNAME_ENCODED:$PASSWORD_ENCODED@localhost:$INPUT_PORT/$DATABASE_ENCODED"
-        CERTIFICATE_PATH="$RUNNER_TEMP/pgdata/server.crt"
+        CERTIFICATE_PATH="$RUNNER_TEMP/action-setup-postgres/$GITHUB_ACTION/pgdata/server.crt"
 
         if [ "$INPUT_SSL" = "true" ]; then
           # Although SSLMODE and SSLROOTCERT are specific to libpq options,
