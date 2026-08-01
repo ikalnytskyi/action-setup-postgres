@@ -37,6 +37,11 @@ jobs:
         with:
           persist-credentials: false
 
+      # Remove once https://github.com/actions/runner-images/issues/14232 is resolved.
+      - name: Trust preinstalled Homebrew taps
+        run: brew trust aws/tap
+        if: runner.os == 'macOS'
+
       - name: Run setup-postgres
         uses: ./
         id: postgres
@@ -89,6 +94,11 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
+      # Remove once https://github.com/actions/runner-images/issues/14232 is resolved.
+      - name: Trust preinstalled Homebrew taps
+        run: brew trust aws/tap
+        if: runner.os == 'macOS'
 
       - name: Run setup-postgres
         uses: ./
