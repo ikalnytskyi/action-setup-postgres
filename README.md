@@ -26,7 +26,7 @@ key features:
 | database         | The database name to set up and grant permissions to the created user.                   | `postgres`  |
 | port             | The server port to listen on.                                                            | `5432`      |
 | max-connections  | The maximum number of concurrent connections to the server.                              | `100`       |
-| postgres-version | The PostgreSQL major version to install. Supported values: "14", "15", "16", "17", "18". | `18`        |
+| postgres-version | The PostgreSQL major version to install. Supported values: "15", "16", "17", "18".       | `18`        |
 
 #### Outputs
 
@@ -102,7 +102,7 @@ steps:
       database: test
       port: 34837
       max-connections: 200
-      postgres-version: "14"
+      postgres-version: "15"
       ssl: true
     id: postgres
 
