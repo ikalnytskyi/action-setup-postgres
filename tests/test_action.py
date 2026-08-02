@@ -125,8 +125,9 @@ def test_environment_variables(is_windows: bool):
     # In case of Windows, there might be a mix of forward and backward slashes
     # as separators. So let's compare paths semantically instead.
     pg_servicefile = pathlib.Path(pg_environ.pop("PGSERVICEFILE", ""))
-    pg_servicefile_exp = pathlib.Path(os.environ["RUNNER_TEMP"], "pgdata", "pg_service.conf")
-    assert pg_servicefile.resolve() == pg_servicefile_exp.resolve()
+    runner_temp = pathlib.Path(os.environ["RUNNER_TEMP"])
+    pg_servicefile_rel = pg_servicefile.resolve().relative_to(runner_temp.resolve())
+    assert pg_servicefile_rel.full_match("action-setup-postgres/*/pgdata/pg_service.conf")
     
     if is_windows:
         pg_environ_exp = {

@@ -30,11 +30,11 @@ key features:
 
 #### Outputs
 
-| Key              | Description                                      | Example                                             |
-|------------------|--------------------------------------------------|-----------------------------------------------------|
-| connection-uri   | The connection URI to connect to PostgreSQL.     | `postgresql://postgres:postgres@localhost/postgres` |
-| service-name     | The service name with connection parameters.     | `postgres`                                          |
-| certificate-path | The path to the server certificate if SSL is on. | `/home/runner/work/_temp/pgdata/server.crt`         |
+| Key              | Description                                      | Example                                                               |
+|------------------|--------------------------------------------------|-----------------------------------------------------------------------|
+| connection-uri   | The connection URI to connect to PostgreSQL.     | `postgresql://postgres:postgres@localhost/postgres`                   |
+| service-name     | The service name with connection parameters.     | `postgres`                                                            |
+| certificate-path | The path to the server certificate if SSL is on. | `$RUNNER_TEMP/action-setup-postgres/$GITHUB_ACTION/pgdata/server.crt` |
 
 #### User permissions
 
